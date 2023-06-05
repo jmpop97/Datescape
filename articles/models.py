@@ -13,7 +13,6 @@ class Article(CommonModel):
     content = models.TextField()
     images = models.ImageField(width_field=100,height_field=100,null=True,blank=True)
     score = models.IntegerField(null=True,blank=True)
-    score2 = models.IntegerField(null=True,blank=True)
     # place = models.CharField(max_length=200,null=True,blank=True) #필드를 뭐로 할지 아직 잘 모르겠습니다. 좌표는 숫자라 integer 일 거 같긴 한데 더 만들어보고 정하겠습니다.
 
 
