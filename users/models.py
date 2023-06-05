@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class CommonModel(models.Model):
     db_status_choice = [
         (1, 'active'),
