@@ -11,7 +11,6 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 media
-!**/migrations/__init__.py
 **/migrations/**.py
 todo.py
 !**/migrations/__init__.py
