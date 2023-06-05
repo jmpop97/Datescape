@@ -11,4 +11,6 @@ class CommonModel(models.Model):
     db_status = models.PositiveIntegerField(
         choices=db_status_choice, default=1)
 
+    class Meta:
+        abstract = True
 # Create your models here.
