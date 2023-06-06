@@ -1,5 +1,5 @@
 from django.db import models
-from users.models import CommonModel
+from users.models import CommonModel, User
 from emoticons.models import EmoticonImage
 
 # Create your models here.
@@ -46,16 +46,15 @@ class Comment(CommonModel):
     댓글내용의 comment필드, 사용된 이모티콘을 의미하는 use_emoticon필드로 구성됩니다.
     """
     article = models.ForeignKey(Article, on_delete=models.CASCADE)
-    # writer = models.ForeignKey(User, on_delete=models.CASCADE)
+    writer = models.ForeignKey(User, on_delete=models.CASCADE)
     comment = models.TextField("댓글 내용", blank=True)
     use_emoticon = models.ForeignKey(EmoticonImage, on_delete=models.SET_NULL, blank=True, null=True)
 
     def __str__(self):
-        return self.comment
-        # user연결되면 writer로 변경?
+        return f'작성자: {self.writer} - 내용: {self.comment}'
 
 class CommentLike(CommonModel):
-    # likers = models.ForeignKey(User, on_delete=models.CASCADE)
+    likers = models.ForeignKey(User, on_delete=models.CASCADE)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
 
     def __str__(self):
