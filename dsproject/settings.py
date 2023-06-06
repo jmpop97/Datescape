@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     
     'users',
     'articles',
+    'reports',
     'emoticons',
 ]
 
