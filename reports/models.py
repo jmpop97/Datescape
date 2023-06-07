@@ -19,7 +19,6 @@ class ReportUser(CommonModel):
     reporter = models.ForeignKey(User, on_delete=models.CASCADE)
     report_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reported')
 
-
 class ReportArticle(CommonModel):
     '''유저 신고
     db_status={1:처리 안됨,2:해결됨}
@@ -32,7 +31,6 @@ class ReportArticle(CommonModel):
         choices=db_status_choice, default=1)
     reporter = models.ForeignKey(User, on_delete=models.CASCADE)
     report_article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='reported')
-
 
 class ReportComment(CommonModel):
     '''유저 신고
