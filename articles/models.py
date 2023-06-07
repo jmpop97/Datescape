@@ -1,4 +1,6 @@
 from django.db import models
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
 from users.models import CommonModel, User
 from emoticons.models import EmoticonImage
 
@@ -9,34 +11,46 @@ class Article(CommonModel):
     아직 User모델과합치지않아서 User모델은 주석처리해뒀습니다.
     지도연동부분도 지도연동후에 주석을풀겠습니다.
     """
-    # user = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=256,)
     content = models.TextField()
-    images = models.ImageField(width_field=100,height_field=100,null=True,blank=True)
-    score = models.IntegerField(null=True,blank=True)
+    images = models.ImageField(null=True,blank=True)
+    score = models.FloatField(null=True,blank=True,validators=[MinValueValidator(0),MaxValueValidator(10),])
     # place = models.CharField(max_length=200,null=True,blank=True) #필드를 뭐로 할지 아직 잘 모르겠습니다. 좌표는 숫자라 integer 일 거 같긴 한데 더 만들어보고 정하겠습니다.
+    def __int__(self):
+        return self.id
 
+    class Meta:
+        db_table = 'article'
+
+    def clean(self):
+        if self.score >= 10:
+            raise ValidationError("숫자는 10 이하로 입력해주세요.")
 
     def __str__(self):
         return self.title
 
+
 class Tag(CommonModel):
     """
     Tag관련 모델입니다.
+    tag
     """
-    tags = models.CharField(max_length=20)
+    tag = models.CharField(max_length=20)
     def __str__(self):
-        return self.tags
+        return self.tag
 
 class TagList(CommonModel):
     """
-    Article, Tag
-
+    Article, Tag 모델의 중간
     """
-    articles = models.ForeignKey(Article,on_delete=models.CASCADE)
-    tags = models.ForeignKey(Tag,on_delete=models.CASCADE)
+    article = models.ForeignKey(Article,on_delete=models.CASCADE)
+    tag = models.ForeignKey(Tag,on_delete=models.CASCADE)
     def __str__(self):
-        return self.articles
+        return self.article
+
+    def __str__(self):
+        return f'작성자: {self.writer} - 내용: {self.comment}'
 
 class Comment(CommonModel):
     """
