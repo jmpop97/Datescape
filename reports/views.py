@@ -9,9 +9,17 @@ from reports.serializers import ReportUserSerializer,ReportArticleSerializer,Rep
 
 # Create your views here.
 class ReportView(APIView):
-    '''신고 접수'''
-
+    '''신고 접수
+    input
+        request_type:   "user" -유저
+                        "article" - 게시글
+                        "comment" - 댓글
+        "report_id":    int - 행당 id값
+    output
+        해당 report DB에 저장
+    '''
     def report_user(self, request):
+        ''' request_type:   "user" '''
         serializer = ReportUserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(reporter=1)
@@ -24,6 +32,7 @@ class ReportView(APIView):
         return message_is,status_is
     
     def report_article(self, request):
+        ''' request_type:   "article" '''
         serializer = ReportArticleSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(reporter=1)
@@ -36,6 +45,7 @@ class ReportView(APIView):
         return message_is,status_is
     
     def report_comment(self, request):
+        ''' request_type:   "comment" '''
         serializer = ReportCommentSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(reporter=1)
@@ -48,6 +58,7 @@ class ReportView(APIView):
         return message_is,status_is
     
     def fail(self, request):
+        ''' request_type:  errors '''
         status_is=status.HTTP_400_BAD_REQUEST
         message_is={"message": "신고유형이 잘못되었습니다."}
         return message_is,status_is
@@ -57,7 +68,6 @@ class ReportView(APIView):
                  "comment":report_comment,
                  "fail":fail,
                  }
-
 
     def post(self, request):
         request_type=request.data.get('request_type')

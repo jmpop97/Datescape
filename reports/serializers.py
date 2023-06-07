@@ -5,6 +5,8 @@ from articles.models import Article, Comment
 
 
 class ReportUserSerializer(serializers.ModelSerializer):
+    '''report_id값을 report_user로 변환,
+    신고자id값과 함께 저장'''
     report_id = serializers.IntegerField(source = "report_user")
     class Meta:
         model = ReportUser
@@ -17,6 +19,8 @@ class ReportUserSerializer(serializers.ModelSerializer):
     
 
 class ReportArticleSerializer(serializers.ModelSerializer):
+    '''report_id값을 report_article로 변환,
+    신고자id값과 함께 저장'''
     report_id = serializers.IntegerField(source = "report_article")
     class Meta:
         model = ReportArticle
@@ -30,6 +34,8 @@ class ReportArticleSerializer(serializers.ModelSerializer):
     
     
 class ReportCommentSerializer(serializers.ModelSerializer):
+    '''report_id값을 report_comment로 변환,
+    신고자id값과 함께 저장'''
     report_id = serializers.IntegerField(source = "report_comment")
     class Meta:
         model = ReportComment
