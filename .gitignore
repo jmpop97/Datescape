@@ -15,10 +15,7 @@ media
 todo.py
 **/migrations/**.py
 !**/migrations/__init__.py
-<<<<<<< HEAD
-todo.py
-=======
->>>>>>> test
+
 
 
 # If your build process includes running collectstatic, then you probably don't need or want to include staticfiles/
