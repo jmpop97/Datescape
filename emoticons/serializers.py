@@ -11,11 +11,15 @@ class EmoticonImageSerializer(serializers.ModelSerializer):
 # 이모티콘
 class EmoticonSerializer(serializers.ModelSerializer):
     images = serializers.SerializerMethodField()
+    creator_name = serializers.SerializerMethodField()
 
     def get_images(self, emoticon):
         qs = EmoticonImage.objects.filter(db_status=1, emoticon=emoticon)
         serializer = EmoticonImageSerializer(instance=qs, many=True)
         return serializer.data
+    
+    def get_creator_name(self, emoticon):
+        return emoticon.creator.username
 
     class Meta:
         model = Emoticon

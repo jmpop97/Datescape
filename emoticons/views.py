@@ -117,8 +117,6 @@ class EmoticonDetailView(APIView):
 
     이모티콘 객체 상세보기 요청을 처리합니다.
     로그인 권한이 요구되며 수정 / 삭제는 요청하는 사용자와 이모티콘 제작자가 동일한 경우에만 허용됩니다.
-    input: 로그인 권한
-    output: 요청 처리에 따라 data와 status 값을 반환
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -137,6 +135,9 @@ class EmoticonDetailView(APIView):
 class EmoticonListView(APIView):
     """
     전체 이모티콘 조회
+    
+    전체 이모티콘 조회 요청을 처리합니다.
+    로그인 권한이 요구되며 판매중 상태의 이모티콘 객체들을 반환합니다.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -148,5 +149,26 @@ class EmoticonListView(APIView):
         output: 요청 처리에 따라 data와 status 값을 반환
         """
         emoticon_list = Emoticon.objects.filter(db_status=1)
+        serializer = EmoticonSerializer(emoticon_list, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class EmoticonTempListView(APIView):
+    """
+    임시저장 이모티콘 조회
+
+    임시저장(유저가 제작 신청 한) 이모티콘 조회 요청을 처리합니다.
+    로그인 권한이 요구되며 요청하는 사용자의 임시저장 이모티콘 객체들을 반환합니다.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        임시저장 이모티콘 조회 요청을 처리합니다.
+
+        요청하는 유저가 제작 신청 한 이모티콘 리스트를 반환합니다.
+        input: 로그인 권한
+        output: 요청 처리에 따라 data와 status 값을 반환
+        """
+        emoticon_list = Emoticon.objects.filter(db_status=0, creator=request.user)
         serializer = EmoticonSerializer(emoticon_list, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
