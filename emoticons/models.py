@@ -5,7 +5,7 @@ from users.models import CommonModel, User
 
 # Create your models here.
 
-# 이모티콘 모델
+
 class Emoticon(CommonModel):
     """
     이모티콘 모델입니다.
@@ -37,7 +37,7 @@ class Emoticon(CommonModel):
     def __str__(self):
         return self.title
 
-# 이모티콘 이미지 모델
+
 class EmoticonImage(CommonModel):
     """
     이모티콘 이미지 모델입니다.
@@ -50,7 +50,7 @@ class EmoticonImage(CommonModel):
     def __str__(self):
         return f'{self.emoticon.title} - {self.image}'
 
-# 이모티콘 구매 테이블
+
 class UserEmoticonList(CommonModel):
     """
     이모티콘 구매 테이블 모델입니다.

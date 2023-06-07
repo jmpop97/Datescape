@@ -2,14 +2,15 @@ from rest_framework import serializers
 from emoticons.models import Emoticon, EmoticonImage, UserEmoticonList
 
 
-# 이모티콘 이미지들
 class EmoticonImageSerializer(serializers.ModelSerializer):
+    """이모티콘 이미지"""
     class Meta:
         model = EmoticonImage
         fields = ("id", "image", "db_status",)
 
-# 이모티콘
+
 class EmoticonSerializer(serializers.ModelSerializer):
+    """이모티콘 조회 / 수정 / 삭제"""
     images = serializers.SerializerMethodField()
     creator_name = serializers.SerializerMethodField()
 
@@ -25,8 +26,9 @@ class EmoticonSerializer(serializers.ModelSerializer):
         model = Emoticon
         fields = "__all__"
 
-# 이모티콘 생성
+
 class EmoticonCreateSerializer(serializers.ModelSerializer):
+    """이모티콘 생성"""
     images = EmoticonImageSerializer(many=True, required=False)
 
     class Meta:
@@ -41,8 +43,9 @@ class EmoticonCreateSerializer(serializers.ModelSerializer):
                 EmoticonImage.objects.create(emoticon=emoticon, image=image_data)
         return emoticon
 
-# 유저가 구매한 이모티콘
+
 class UserEmoticonListSerializer(serializers.ModelSerializer):
+    """유저가 구매한 이모티콘"""
     class Meta:
         model = UserEmoticonList
         fields = "__all__"
