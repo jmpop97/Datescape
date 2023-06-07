@@ -72,8 +72,8 @@ class Comment(CommonModel):
         return f'작성자: {self.writer} - 내용: {self.comment}'
 
 class CommentLike(CommonModel):
-    likers = models.ForeignKey(User, on_delete=models.CASCADE)
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+    likers = models.ForeignKey(User, on_delete=models.CASCADE, related_name='like_user')
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='comment_like')
 
     def __str__(self):
-        return self.comment
+        return self.comment.comment

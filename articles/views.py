@@ -6,8 +6,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status, permissions
 from articles.serializers import (ArticleSerializer, ArticleCreateSerializer,
-                                CommentSerializer, CommentCreateSerializer)
-from articles.models import Article, Comment
+            CommentSerializer, CommentCreateSerializer, CommentLikeSerizlizer)
+from articles.models import Article, Comment, CommentLike
 from dsproject import settings
 
 import json
@@ -199,3 +199,32 @@ class CommentView(APIView):
             return Response({"message": "삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({"message": "권한이 없습니다!"}, status=status.HTTP_403_FORBIDDEN)
+
+
+class CommentLikeView(APIView):
+    """
+    댓글 좋아요
+
+    댓글에 대한 좋아요 요청을 처리합니다.
+    댓글과 유저모델을 참조하는 CommentLike객체를 생성합니다.
+    로그인 권한이 요구됩니다.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        """
+        댓글에 대한 좋아요 요청을 처리합니다.
+        
+        input: 로그인 상태, 댓글 id
+        output: 요청 처리에 따라 status 값을 반환
+        """
+        comment_id = request.data['comment_id']
+        comment = get_object_or_404(Comment, id=comment_id, db_status=1)
+        user = request.user
+
+        if CommentLike.objects.filter(comment=comment, likers=user):
+            CommentLike.objects.filter(comment=comment, likers=user).delete()
+            return Response({'message':'좋아요 취소!'}, status=status.HTTP_200_OK)
+        else:
+            CommentLike.objects.create(likers=user, comment=comment)
+            return Response({'message':'좋아요!'}, status=status.HTTP_200_OK)
