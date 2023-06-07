@@ -7,19 +7,16 @@ from users.admin import CommonModelAdmin
 class EmoticonAdmin(CommonModelAdmin):
     fields = ("creator", "title")
     list_display = ("creator", "title")
-    readonly_fields = ("creator", "title")
 
 
 class EmoticonImageAdmin(CommonModelAdmin):
     fields = ("emoticon", "image")
     list_display = ("emoticon", "image")
-    readonly_fields = ("emoticon", "image")
 
 
 class UserEmoticonListAdmin(CommonModelAdmin):
     fields = ("buyer", "sold_emoticon")
     list_display = ("buyer", "sold_emoticon")
-    readonly_fields = ("buyer", "sold_emoticon")
 
 
 admin.site.register(Emoticon, EmoticonAdmin)
