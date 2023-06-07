@@ -1,4 +1,6 @@
+from pprint import pprint
 from django.shortcuts import render
+from django.http import JsonResponse
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -6,8 +8,59 @@ from rest_framework import status, permissions
 from articles.serializers import (ArticleSerializer, ArticleCreateSerializer,
                                 CommentSerializer, CommentCreateSerializer)
 from articles.models import Article, Comment
+from dsproject import settings
+
 import json
+import requests
+
 # Create your views here.
+REST_API_KEY = settings.REST_API
+class KakaoMapView(APIView):
+    """
+    get은필요없을거같지만 참고용으로두겠습니다 최종땐 삭제해야합니다.
+    """
+    def get(self, request, format=None):
+        headers = {
+            'Authorization': f'KakaoAK {REST_API_KEY}',  # REST API 키
+            'Content-Type': 'application/x-www-form-urlencoded',
+            # 헤더 설정
+        }
+        # 검색할 좌표 값
+        x, y = 126.531039, 33.499553 
+        url = f'https://dapi.kakao.com/v2/local/geo/coord2address.json?x={x}&y={y}'
+        response = requests.get(url, headers=headers)
+        data = response.json()
+
+        # 주소 추출 및 반환
+        documents = data.get('documents')
+        if documents:
+            address = documents[0].get('address').get('address_name')
+            road_address = documents[0].get('road_address').get('address_name')
+            return Response({'address': address, 'road_address':road_address})
+        else:
+            return Response({'error': '결과가 없습니다...니다...ㅠㅠㅠㅠㅠ'},status=status.HTTP_204_NO_CONTENT)
+
+    def post(self, request):
+        headers = {
+            'Authorization': f'KakaoAK {REST_API_KEY}',
+        }
+        x = request.data.get('x', None)
+        y = request.data.get('y', None)
+        data = {
+            'x': float(x),
+            'y': float(y),    
+        }
+        url = f'https://dapi.kakao.com/v2/local/geo/coord2address.json?x={x}&y={y}'
+        response = requests.post(url, headers=headers)
+        data = response.json()
+        documents = data.get('documents')
+        if documents:
+            address = documents[0].get('address').get('address_name')
+            road_address = documents[0].get('road_address').get('address_name')
+            return Response({'address': address, 'road_address':road_address})
+        else:
+            return Response({'error': '결과가 없습니다...니다...ㅠㅠㅠㅠㅠ'},status=status.HTTP_204_NO_CONTENT)
+
 
 class ArticleView(APIView):# serializer 수정? 꾸미기?
     def get(self, request):
