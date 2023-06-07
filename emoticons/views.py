@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework import status, permissions
 from emoticons.serializers import EmoticonSerializer, EmoticonCreateSerializer, UserEmoticonListSerializer
 from emoticons.models import Emoticon, EmoticonImage, UserEmoticonList
+from users.models import User
 
 
 # Create your views here.
@@ -15,7 +16,7 @@ class EmoticonView(APIView):
     이모티콘 제작요청시 임시저장상태로 저장되며 임시저장상태에서는 수정 및 삭제가 가능합니다.
     로그인 권한이 요구됩니다.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         """
@@ -47,7 +48,8 @@ class EmoticonView(APIView):
             serializer = EmoticonCreateSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.save(creator=request.user)
+            serializer.save(creator=User.objects.get(id=2))
+            # serializer.save(creator=request.user)
             return Response({'message':'신청 완료'}, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -111,16 +113,15 @@ class EmoticonView(APIView):
         else:
             return Response({"message": "권한이 없습니다!"}, status=status.HTTP_403_FORBIDDEN)
 
+
 class EmoticonDetailView(APIView):
     """
     이모티콘 상세보기
 
     이모티콘 객체 상세보기 요청을 처리합니다.
     로그인 권한이 요구되며 수정 / 삭제는 요청하는 사용자와 이모티콘 제작자가 동일한 경우에만 허용됩니다.
-    input: 로그인 권한
-    output: 요청 처리에 따라 data와 status 값을 반환
     """
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, emoticon_id):
         """
@@ -130,15 +131,19 @@ class EmoticonDetailView(APIView):
         input: 로그인 권한
         output: 요청 처리에 따라 status 값을 반환
         """
-        emoticon = get_object_or_404(Emoticon, id=emoticon_id, db_status=1)
+        emoticon = get_object_or_404(Emoticon, id=emoticon_id, db_status=0)
         serializer = EmoticonSerializer(emoticon)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class EmoticonListView(APIView):
     """
     전체 이모티콘 조회
+    
+    전체 이모티콘 조회 요청을 처리합니다.
+    로그인 권한이 요구되며 판매중 상태의 이모티콘 객체들을 반환합니다.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         """
@@ -148,5 +153,42 @@ class EmoticonListView(APIView):
         output: 요청 처리에 따라 data와 status 값을 반환
         """
         emoticon_list = Emoticon.objects.filter(db_status=1)
+        serializer = EmoticonSerializer(emoticon_list, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class EmoticonTempListView(APIView):
+    """
+    임시저장 이모티콘 조회
+
+    임시저장(유저가 제작 신청 한) 이모티콘 조회 요청을 처리합니다.
+    로그인 권한이 요구되며 요청하는 사용자의 임시저장 이모티콘 객체들을 반환합니다.
+    """
+    # permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        임시저장 이모티콘 조회 요청을 처리합니다.
+
+        요청하는 유저가 제작 신청 한 이모티콘 리스트를 반환합니다.
+        input: 로그인 권한
+        output: 요청 처리에 따라 data와 status 값을 반환
+        """
+
+        """
+        request.user에 따라서 관리자인 경우 전체 / 일반 유저인 경우 본인것만
+
+        if request.user.is_admin == 1: # 관리자인 경우
+            emoticon_list = Emoticon.objects.filter(db_status=0)
+            serializer = EmoticonSerializer(emoticon_list, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        elif request.user.is_admin == 0: # 일반 유저인 경우
+            emoticon_list = Emoticon.objects.filter(db_status=0, creator=request.user)
+            serializer = EmoticonSerializer(emoticon_list, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        """
+        emoticon_list = Emoticon.objects.filter(db_status=0, creator=User.objects.get(id=2))
+        # emoticon_list = Emoticon.objects.filter(db_status=0, creator=request.user)
         serializer = EmoticonSerializer(emoticon_list, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
