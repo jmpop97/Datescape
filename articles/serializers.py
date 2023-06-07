@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from articles.models import Article
+from articles.models import Article, Comment
 
 
 class ArticleSerializer (serializers.ModelSerializer):
@@ -24,3 +24,22 @@ class ArticleCreateSerializer (serializers.ModelSerializer):
     class Meta:
         model = Article
         fields = "__all__"
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    """댓글 조회 """
+    username = serializers.SerializerMethodField()
+
+    def get_username(self, comment):
+        return comment.writer.username
+
+    class Meta:
+        model = Comment
+        fields = "__all__"
+
+
+class CommentCreateSerializer(serializers.ModelSerializer):
+    """ 댓글 생성 / 수정 """
+    class Meta:
+        model = Comment
+        fields = ('comment', 'use_emoticon', 'id')
