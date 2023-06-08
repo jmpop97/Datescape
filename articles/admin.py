@@ -1,9 +1,11 @@
 from django.contrib import admin
-from articles.models import Article, Tag, Comment
+from articles.models import Article, Tag, Comment, CommentLike
+from users.admin import CommonModelAdmin
+
+
 # Register your models here.
 admin.site.register(Tag)
 admin.site.register(Article)
-admin.site.register(Comment)
 
 
 # class ArticlesAdmin(admin.ModelAdmin):
@@ -19,3 +21,16 @@ admin.site.register(Comment)
 
 
 # admin.site.register(Article, ArticlesAdmin)
+
+class CommentAdmin(CommonModelAdmin):
+    fields = ("article", "writer", "comment", "use_emoticon")
+    list_display = ("article", "writer", "comment", "use_emoticon")
+
+
+class CommentLikeAdmin(CommonModelAdmin):
+    fields = ("likers", "comment")
+    list_display = ("likers", "comment")
+
+
+admin.site.register(Comment, CommentAdmin)
+admin.site.register(CommentLike, CommentLikeAdmin)
