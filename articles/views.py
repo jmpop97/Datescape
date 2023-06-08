@@ -294,18 +294,19 @@ class ArticleLocationView(APIView):
     def get(self, request):
         latitude = self.request.GET.get('latitude', '')
         longitude = self.request.GET.get('longitude', '')
-        position  = (latitude,longitude)
+        position  = (float(latitude),float(longitude))
+        print(position)
         # 필터 조건
         q = Q()
-        q.add( Q(latitude__range  = (latitude - 0.01, latitude + 0.01)) |
-            Q(longitude__range = (longitude - 0.015, longitude + 0.015)),
+        q.add( Q(coordinate_y__range  = (float(latitude) - 0.01, float(latitude) + 0.01)) |
+            Q(coordinate_x__range = (float(longitude) - 0.015, float(longitude) + 0.015)),
             q.AND)
         q.add(Q(db_status=1), q.AND)     
         # 필터링
-        near_articles = (Article.objects.filter(q))
-        test = [na for na in near_articles if haversine(position, (na.latitude, na.longitude)) <= 2]
-        # filter(Q(title__icontains=query) |Q(post__icontains=query)).distinct().order_by('-created_at')
-        # 일정간격필터링
-        # haversine(position, (info.latitude, info.longitude)) <= 2
-        serializer = ArticleSerializer(test, many=True)
+        near_articles = (KakaoMapDataBase.objects.filter(q))
+        print(near_articles)
+        # 내 위치와 필터링된 객체 사이의 거리가 2km 이하인 것만 가져오기
+        test = [na for na in near_articles if haversine(position, (na.coordinate_y, na.coordinate_x)) <= 2]
+        print(test)
+        serializer = MapSearchSerializer(test, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

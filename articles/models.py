@@ -4,7 +4,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from users.models import CommonModel, User
 from emoticons.models import EmoticonImage
 
-# Create your models here.
+
 class KakaoMapDataBase(CommonModel):
     """
     db저장용 모델입니다.
