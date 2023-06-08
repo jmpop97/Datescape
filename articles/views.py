@@ -9,6 +9,8 @@ from articles.serializers import (ArticleSerializer, ArticleCreateSerializer,
             CommentSerializer, CommentCreateSerializer, CommentLikeSerizlizer)
 from articles.models import Article, Comment, CommentLike
 from dsproject import settings
+from django.db.models import Q
+from haversine import haversine, Unit
 
 import json
 import requests
@@ -261,4 +263,24 @@ class CommentLikeView(APIView):
 
 
 class ArticleLocationView(APIView):
-    pass
+    """
+    사용자 위치를 기반으로 반경 2km에 있는 데이터를 불러옵니다.
+    """
+    def get(self, request):
+        latitude = self.request.GET.get('latitude', '')
+        longitude = self.request.GET.get('longitude', '')
+        position  = (latitude,longitude)
+        # 필터 조건
+        q = Q()
+        q.add( Q(latitude__range  = (latitude - 0.01, latitude + 0.01)) |
+            Q(longitude__range = (longitude - 0.015, longitude + 0.015)),
+            q.AND)
+        q.add(Q(db_status=1), q.AND)     
+        # 필터링
+        near_articles = (Article.objects.filter(q))
+        test = [na for na in near_articles if haversine(position, (na.latitude, na.longitude)) <= 2]
+        # filter(Q(title__icontains=query) |Q(post__icontains=query)).distinct().order_by('-created_at')
+        # 일정간격필터링
+        # haversine(position, (info.latitude, info.longitude)) <= 2
+        serializer = ArticleSerializer(test, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
