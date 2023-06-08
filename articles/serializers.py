@@ -1,5 +1,18 @@
 from rest_framework import serializers
-from articles.models import Article, Comment, CommentLike
+from articles.models import Article, Comment, CommentLike, KakaoMapDataBase
+
+
+class MapSearchSerializer(serializers.ModelSerializer):
+    """지도정보 db저장"""
+
+    class Meta:
+        model = KakaoMapDataBase
+        fields = ('jibun_address', 'road_address', 'coordinate_x', 'coordinate_y')
+
+    def create(self, validated_data):
+        return KakaoMapDataBase.objects.create(**validated_data)
+
+
 
 
 class ArticleSerializer (serializers.ModelSerializer):
@@ -8,15 +21,7 @@ class ArticleSerializer (serializers.ModelSerializer):
     class Meta:
         model = Article
         fields = "__all__"
-    
 
-# class ArticleSerializer (serializers.ModelSerializer):
-    # """ 게시글 조회, 작성 """
-
-#     class Meta:
-#         model = Article
-#         # fields = ("title", "content","score","images")
-#         exclude = ("user",)
 
 class ArticleCreateSerializer (serializers.ModelSerializer):
     """ 상세 게시글 조회 """
