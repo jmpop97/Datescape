@@ -15,9 +15,10 @@ import requests
 
 # Create your views here.
 REST_API_KEY = settings.REST_API
-class KakaoMapView(APIView):
+class KakaoMapCoordinateView(APIView):
     """
     get은필요없을거같지만 참고용으로두겠습니다 최종땐 삭제해야합니다.
+    좌표검색용 뷰입니다.
     """
     def get(self, request, format=None):
         headers = {
@@ -60,6 +61,35 @@ class KakaoMapView(APIView):
             return Response({'address': address, 'road_address':road_address})
         else:
             return Response({'error': '결과가 없습니다...니다...ㅠㅠㅠㅠㅠ'},status=status.HTTP_204_NO_CONTENT)
+
+
+class KakaoMapSearchView(APIView):
+    """
+    지역명 검색용 뷰입니다.
+    """
+    def post(self, request):
+        headers = {
+            'Authorization': f'KakaoAK {REST_API_KEY}',
+        }
+        query = request.data.get('query', None)
+        data = {
+            'query': query
+        }
+        url = f'https://dapi.kakao.com/v2/local/search/keyword.json?query={query}'
+        response = requests.post(url, headers=headers)
+        data = response.json()
+        documents = data.get('documents')
+        if documents:
+            search_result = []
+            for doc in documents:
+                address = doc.get('address_name')
+                road_address = doc.get('road_address_name')
+                place_name = doc.get('place_name')
+                search_result.append({'address': address, 'road_address':road_address, 'place_name': place_name})
+            return Response(search_result)
+        else:
+            return Response({'error': '결과가 없습니다...'},status=status.HTTP_204_NO_CONTENT)
+
 
 
 class ArticleView(APIView):# serializer 수정? 꾸미기?
