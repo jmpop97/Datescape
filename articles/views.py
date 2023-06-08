@@ -228,3 +228,7 @@ class CommentLikeView(APIView):
         else:
             CommentLike.objects.create(likers=user, comment=comment)
             return Response({'message':'좋아요!'}, status=status.HTTP_200_OK)
+
+
+class ArticleLocationView(APIView):
+    pass
