@@ -7,4 +7,5 @@ urlpatterns = [
     path('list/', views.EmoticonListView.as_view(), name="emoticon_list"),                  # 전체 이모티콘 조회
     path('<int:emoticon_id>/', views.EmoticonDetailView.as_view(), name="emoticon_detail"), # 이모티콘 자세히 보기
     path('temp/', views.EmoticonTempListView.as_view(), name="emoticon_temp_list"),         # 임시저장 이모티콘 리스트
+    path('payment/', views.UserEmoticonListView.as_view(), name="user_buy_emoticon"),       # 이모티콘 결제 DB저장
 ]
