@@ -6,8 +6,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status, permissions
 from articles.serializers import (ArticleSerializer, ArticleCreateSerializer,
-            CommentSerializer, CommentCreateSerializer, CommentLikeSerizlizer)
-from articles.models import Article, Comment, CommentLike
+            CommentSerializer, CommentCreateSerializer, CommentLikeSerizlizer, MapSearchSerializer)
+from articles.models import Article, Comment, CommentLike, KakaoMapDataBase
 from dsproject import settings
 
 import json
@@ -15,6 +15,26 @@ import requests
 
 # Create your views here.
 REST_API_KEY = settings.REST_API
+
+
+class KakaoSaveView(APIView):
+    """
+    지도 db저장 뷰입니다.
+    """
+    def get(self, request):
+        map_data = KakaoMapDataBase.objects.all()
+        serializer = MapSearchSerializer(map_data, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = MapSearchSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class KakaoMapCoordinateView(APIView):
     """
     get은필요없을거같지만 참고용으로두겠습니다 최종땐 삭제해야합니다.
@@ -80,15 +100,20 @@ class KakaoMapSearchView(APIView):
         data = response.json()
         documents = data.get('documents')
         if documents:
-            search_result = []
-            for doc in documents:
-                address = doc.get('address_name')
-                road_address = doc.get('road_address_name')
-                place_name = doc.get('place_name')
-                search_result.append({'address': address, 'road_address':road_address, 'place_name': place_name})
-            return Response(search_result)
+            serializer = MapSearchSerializer(data={
+                'jibun_address': documents[0].get('address_name'),
+                'road_address': documents[0].get('road_address_name'),
+                'coordinate_x': documents[0].get('x'),
+                'coordinate_y': documents[0].get('y'),
+            })
+
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({'error': '결과가 없습니다...'},status=status.HTTP_204_NO_CONTENT)
+            return Response({'error': '결과가 없습니다.'},status=status.HTTP_204_NO_CONTENT)
 
 
 
