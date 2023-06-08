@@ -1,5 +1,7 @@
 from django.contrib import admin
-from articles.models import Article, Tag, Comment, CommentLike, KakaoMapDataBase
+from articles.models import (Article, Tag, 
+                             Comment, CommentLike, 
+                             KakaoMapDataBase)
 from users.admin import CommonModelAdmin
 
 
