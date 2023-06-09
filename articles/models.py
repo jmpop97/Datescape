@@ -66,8 +66,6 @@ class TagList(CommonModel):
     def __str__(self):
         return self.article
 
-    def __str__(self):
-        return f'작성자: {self.writer} - 내용: {self.comment}'
 
 class Comment(CommonModel):
     """
@@ -83,6 +81,7 @@ class Comment(CommonModel):
 
     def __str__(self):
         return f'작성자: {self.writer} - 내용: {self.comment}'
+
 
 class CommentLike(CommonModel):
     likers = models.ForeignKey(User, on_delete=models.CASCADE, related_name='like_user')
