@@ -9,17 +9,18 @@ from users.models import User
 
 
 class CommonModelAdmin(admin.ModelAdmin):
-    '''공통모델의 어드민'''
-    list_display=()
-    readonly_fields=()
-    common_list_display=('created_at','updated_at',"db_status")
-    common_fields =('created_at','updated_at',"db_status")
-    common_readonly_fields = ('created_at','updated_at')
+    """공통모델의 어드민"""
+
+    list_display = ()
+    readonly_fields = ()
+    common_list_display = ("created_at", "updated_at", "db_status")
+    common_fields = ("created_at", "updated_at", "db_status")
+    common_readonly_fields = ("created_at", "updated_at")
 
     def __init__(self, model: type, admin_site):
-        self.fields+=self.common_fields
-        self.list_display+=self.common_list_display
-        self.readonly_fields+=self.common_readonly_fields
+        self.fields += self.common_fields
+        self.list_display += self.common_list_display
+        self.readonly_fields += self.common_readonly_fields
         super().__init__(model, admin_site)
 
 
@@ -63,7 +64,14 @@ class UserChangeForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ["email", "password", "username", "profileimage", "is_active", "is_admin"]
+        fields = [
+            "email",
+            "password",
+            "username",
+            "profileimage",
+            "is_active",
+            "is_admin",
+        ]
 
 
 class UserAdmin(BaseUserAdmin):
@@ -74,11 +82,11 @@ class UserAdmin(BaseUserAdmin):
     # The fields to be used in displaying the User model.
     # These override the definitions on the base UserAdmin
     # that reference specific fields on auth.User.
-    list_display = ["email", "username", "profileimage", "is_admin"]
+    list_display = ["email", "username", "profileimage", "login_type", "is_admin"]
     list_filter = ["is_admin"]
     fieldsets = [
         (None, {"fields": ["email", "password"]}),
-        ("Personal info", {"fields": ["username"]}),
+        ("Personal info", {"fields": ["username", "profileimage", "login_type"]}),
         ("Permissions", {"fields": ["is_admin"]}),
     ]
     # add_fieldsets is not a standard ModelAdmin attribute. UserAdmin
