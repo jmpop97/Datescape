@@ -55,26 +55,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # allauth
-    # 'django.contrib.sites',
-    # 'allauth',
-    # 'allauth.account',
-    # 'allauth.socialaccount',
-    # 'allauth.socialaccount.providers.kakao',
-    # 'allauth.socialaccount.providers.naver',
-    # 'allauth.socialaccount.providers.google',
-    # 'allauth.socialaccount.providers.github',
-    
     # jwt 인증
     'rest_framework',
     'rest_framework_simplejwt',
-    # 'rest_framework.authtoken',
+
     # 프로필 사진 수정시 이전에 저장된 사진 DB에서 삭제 패키지
     'django_cleanup.apps.CleanupConfig',
-    
-    # 소셜, 이메일인증 라이브러리
-    # 'dj_rest_auth',
-    # 'dj_rest_auth.registration',
     
     'corsheaders',
 
@@ -226,4 +212,3 @@ EMAIL_PORT = 587
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_HOST_USER = get_secret("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = get_secret("EMAIL_HOST_PASSWORD")
-LOGIN_URL = 'https://daechinelearning.netlify.app/templates/login.html'
