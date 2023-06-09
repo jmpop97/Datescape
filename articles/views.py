@@ -7,7 +7,8 @@ from rest_framework.views import APIView
 from rest_framework import status, permissions
 from articles.serializers import (ArticleSerializer, ArticleCreateSerializer,
             CommentSerializer, CommentCreateSerializer, CommentLikeSerizlizer, MapSearchSerializer)
-from articles.models import Article, Comment, CommentLike, KakaoMapDataBase
+from articles.models import (Article, Tag,
+                            Comment, CommentLike, KakaoMapDataBase)
 from dsproject import settings
 from django.db.models import Q
 from haversine import haversine, Unit
@@ -140,10 +141,15 @@ class ArticleView(APIView, PaginationHandler):# serializer 수정? 꾸미기?
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
+        tags = request.data.pop('tags', [])
         serializer = ArticleSerializer(data=request.data)
+
         if serializer.is_valid():
-            serializer.save(user=request.user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            article = serializer.save(user=request.user)
+            for tag in tags:
+                tag_obj, _ = Tag.objects.get_or_create(tag=tag)
+                article.tags.add(tag_obj)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

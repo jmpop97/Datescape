@@ -24,17 +24,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 secret_file = os.path.join(BASE_DIR, '.secret/secrets.json') # secrets.json 파일 위치
-with open(secret_file) as f:
-    secrets = json.loads(f.read())
+with open(secret_file,'r') as f:
+    secrets = json.load(f)
 
-def get_secret(setting, secrets=secrets):
-    try:
-        return secrets[setting]
-    except KeyError:
-        error_msg = "Set the {} environment variable".format(setting)
-        raise ImproperlyConfigured(error_msg)
-SECRET_KEY = get_secret("SECRET_KEY")
-REST_API = get_secret("REST_API")
+SECRET_KEY = secrets.get("SECRET_KEY","")
+REST_API = secrets.get("REST_API","")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
