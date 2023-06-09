@@ -11,7 +11,7 @@ from reports.serializers import ReportUserSerializer,ReportArticleSerializer,Rep
 class ReportView(APIView):
     '''신고 접수
     input
-        request_type:   "user" -유저
+        report_type:   "user" -유저
                         "article" - 게시글
                         "comment" - 댓글
         "report_id":    int - 행당 id값
@@ -70,6 +70,6 @@ class ReportView(APIView):
                  }
 
     def post(self, request):
-        request_type=request.data.get('request_type')
+        request_type=request.data.get('report_type')
         message_is,status_is=self.request_dic.get(request_type,self.request_dic["fail"])(self, request)
         return Response(message_is, status=status_is)
