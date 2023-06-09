@@ -18,33 +18,6 @@ class KakaoMapDataBase(CommonModel):
         return self.jibun_address
 
 
-class Article(CommonModel):
-    """
-    게시글 모델입니다.
-    지도연동부분도 지도연동후에 주석을풀겠습니다.
-    """
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    title = models.CharField(max_length=256,)
-    content = models.TextField()
-    images = models.ImageField(null=True,blank=True)
-    score = models.FloatField(null=True,blank=True,validators=[MinValueValidator(0),MaxValueValidator(10),])
-    # place = models.CharField(max_length=200,null=True,blank=True) #필드를 뭐로 할지 아직 잘 모르겠습니다. 좌표는 숫자라 integer 일 거 같긴 한데 더 만들어보고 정하겠습니다.
-
-    def __int__(self):
-        return self.id
-
-    def clean(self):
-        if self.score >= 10:
-            raise ValidationError("숫자는 10 이하로 입력해주세요.")
-
-    def __str__(self):
-        return self.title
-    
-    class Meta:
-        db_table = 'article'
-
-
 class Tag(CommonModel):
     """
     Tag관련 모델입니다.
@@ -56,15 +29,32 @@ class Tag(CommonModel):
         return self.tag
 
 
-class TagList(CommonModel):
+class Article(CommonModel):
     """
-    Article, Tag 모델의 중간
+    게시글 모델입니다.
+    지도연동부분도 지도연동후에 주석을풀겠습니다.
     """
-    article = models.ForeignKey(Article,on_delete=models.CASCADE)
-    tag = models.ForeignKey(Tag,on_delete=models.CASCADE)
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=256,)
+    content = models.TextField()
+    images = models.ImageField(null=True,blank=True)
+    score = models.FloatField(null=True,blank=True,validators=[MinValueValidator(0),MaxValueValidator(10),])
+    tags = models.ManyToManyField(Tag)
+    # place = models.CharField(max_length=200,null=True,blank=True) #필드를 뭐로 할지 아직 잘 모르겠습니다. 좌표는 숫자라 integer 일 거 같긴 한데 더 만들어보고 정하겠습니다.
+
+    def __int__(self):
+        return self.id
+
+    def clean(self):
+        if self.score >= 11:
+            raise ValidationError("숫자는 10 이하로 입력해주세요.")
 
     def __str__(self):
-        return self.article
+        return self.title
+    
+    class Meta:
+        db_table = 'article'
 
 
 class Comment(CommonModel):
