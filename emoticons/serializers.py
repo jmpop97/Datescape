@@ -21,7 +21,11 @@ class EmoticonSerializer(serializers.ModelSerializer):
         return serializer.data
     
     def get_creator_name(self, emoticon):
-        return emoticon.creator.username
+        if emoticon.creator:
+            creator = emoticon.creator.username
+        else:
+            creator = '서버 또는 삭제된 사용자'
+        return creator
     
     def get_buy(self, emoticon):
         request_user = self.context.get('user')
@@ -54,4 +58,11 @@ class UserEmoticonListSerializer(serializers.ModelSerializer):
     """유저가 구매한 이모티콘"""
     class Meta:
         model = UserEmoticonList
+        fields = "__all__"
+
+
+class EmoticonImageSerializer(serializers.ModelSerializer):
+    """ 이모티콘 이미지 """
+    class Meta:
+        model = EmoticonImage
         fields = "__all__"
