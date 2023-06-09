@@ -29,6 +29,14 @@ with open(secret_file,'r') as f:
 
 SECRET_KEY = secrets.get("SECRET_KEY","")
 REST_API = secrets.get("REST_API","")
+
+# 소셜 로그인 API_KEY
+KAKAO_API_KEY = secrets.get("KAKAO_API_KEY", "")
+KAKAO_SECRET_CODE = secrets.get("KAKAO_SECRET_CODE")
+# NAVER_API_KEY = get_secret("NAVER_ID")
+# GOOGLE_API_KEY = get_secret("GOOGLE_ID")
+# GITHUB_API_KEY = get_secret("GITHUB_ID")
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -48,6 +56,9 @@ INSTALLED_APPS = [
     # jwt 인증
     'rest_framework',
     'rest_framework_simplejwt',
+
+    # 프로필 사진 수정시 이전에 저장된 사진 DB에서 삭제 패키지
+    'django_cleanup.apps.CleanupConfig',
     
     'corsheaders',
 
@@ -193,3 +204,11 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+# 이메일 인증
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_HOST_USER = get_secret("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = get_secret("EMAIL_HOST_PASSWORD")

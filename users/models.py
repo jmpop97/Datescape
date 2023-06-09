@@ -62,6 +62,14 @@ class User(AbstractBaseUser):
     )
     username = models.CharField("아이디", max_length=50, unique=True)
     profileimage = models.ImageField(upload_to='profile', blank=True, default='profile/default.png')
+    LOGIN_TYPE = [
+        ('normal', '일반'),
+        ('google', '구글'),
+        ('kakao', '카카오'),
+        ('naver', '네이버'),
+        ('github', '깃허브'),
+    ]
+    login_type = models.CharField("로그인 타입", max_length=10, choices=LOGIN_TYPE, default='normal')
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
 

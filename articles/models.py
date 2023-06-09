@@ -23,7 +23,7 @@ class Tag(CommonModel):
     Tag관련 모델입니다.
     tag
     """
-    tag = models.CharField(max_length=20)
+    tag = models.CharField(max_length=20, unique=True)
 
     def __str__(self):
         return self.tag
@@ -40,7 +40,7 @@ class Article(CommonModel):
     content = models.TextField()
     images = models.ImageField(null=True,blank=True)
     score = models.FloatField(null=True,blank=True,validators=[MinValueValidator(0),MaxValueValidator(10),])
-    tags = models.ManyToManyField(Tag)
+    tags = models.ManyToManyField(Tag, through="TagList")
     # place = models.CharField(max_length=200,null=True,blank=True) #필드를 뭐로 할지 아직 잘 모르겠습니다. 좌표는 숫자라 integer 일 거 같긴 한데 더 만들어보고 정하겠습니다.
 
     def __int__(self):
@@ -55,6 +55,11 @@ class Article(CommonModel):
     
     class Meta:
         db_table = 'article'
+
+
+class TagList(CommonModel):
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
+    article = models.ForeignKey(Article, on_delete=models.CASCADE)
 
 
 class Comment(CommonModel):
