@@ -19,6 +19,18 @@ class KakaoMapDataBase(CommonModel):
         return self.jibun_address
 
 
+class Tag(CommonModel):
+    """
+    Tag관련 모델입니다.
+    tag
+    """
+
+    tag = models.CharField(max_length=20, unique=True)
+
+    def __str__(self):
+        return self.tag
+
+
 class Article(CommonModel):
     """
     게시글 모델입니다.
@@ -54,18 +66,6 @@ class Article(CommonModel):
 
     class Meta:
         db_table = "article"
-
-
-class Tag(CommonModel):
-    """
-    Tag관련 모델입니다.
-    tag
-    """
-
-    tag = models.CharField(max_length=20, unique=True)
-
-    def __str__(self):
-        return self.tag
 
 
 class TagList(CommonModel):
