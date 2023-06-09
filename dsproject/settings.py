@@ -33,7 +33,13 @@ def get_secret(setting, secrets=secrets):
     except KeyError:
         error_msg = "Set the {} environment variable".format(setting)
         raise ImproperlyConfigured(error_msg)
-SECRET_KEY = get_secret("SECRET_KEY")
+SECRET_KEY = secrets.get("SECRET_KEY", "")
+# 소셜 로그인 API_KEY
+KAKAO_API_KEY = secrets.get("KAKAO_API_KEY", "")
+KAKAO_SECRET_CODE = secrets.get("KAKAO_SECRET_CODE")
+# NAVER_API_KEY = get_secret("NAVER_ID")
+# GOOGLE_API_KEY = get_secret("GOOGLE_ID")
+# GITHUB_API_KEY = get_secret("GITHUB_ID")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -51,9 +57,26 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
+    # allauth
+    # 'django.contrib.sites',
+    # 'allauth',
+    # 'allauth.account',
+    # 'allauth.socialaccount',
+    # 'allauth.socialaccount.providers.kakao',
+    # 'allauth.socialaccount.providers.naver',
+    # 'allauth.socialaccount.providers.google',
+    # 'allauth.socialaccount.providers.github',
+    
     # jwt 인증
     'rest_framework',
     'rest_framework_simplejwt',
+    # 'rest_framework.authtoken',
+    # 프로필 사진 수정시 이전에 저장된 사진 DB에서 삭제 패키지
+    'django_cleanup.apps.CleanupConfig',
+    
+    # 소셜, 이메일인증 라이브러리
+    # 'dj_rest_auth',
+    # 'dj_rest_auth.registration',
     
     'corsheaders',
 
@@ -108,6 +131,7 @@ DATABASES = {
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        # 'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
     )
 }
 
@@ -197,3 +221,12 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+# 이메일 인증
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_HOST_USER = get_secret("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = get_secret("EMAIL_HOST_PASSWORD")
+LOGIN_URL = 'https://daechinelearning.netlify.app/templates/login.html'
