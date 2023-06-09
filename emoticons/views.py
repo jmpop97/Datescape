@@ -2,7 +2,7 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status, permissions
-from emoticons.serializers import EmoticonSerializer, EmoticonCreateSerializer
+from emoticons.serializers import EmoticonSerializer, EmoticonCreateSerializer, EmoticonImageSerializer
 from emoticons.models import Emoticon, EmoticonImage, UserEmoticonList
 
 
@@ -25,7 +25,7 @@ class EmoticonView(APIView):
         output: db_status=1, 사용자가 구매한 이모티콘 객체들을 Response
         """
         emoticon = UserEmoticonList.objects.filter(db_status=1, buyer=request.user)
-        qs = []
+        qs = [Emoticon.objects.get(title='기본')]
         for a in emoticon:
             qs.append(a.sold_emoticon)
 
@@ -202,3 +202,25 @@ class UserEmoticonListView(APIView):
         emoticon = get_object_or_404(Emoticon, id=int(request.data['emoticon_id']), db_status=1)
         UserEmoticonList.objects.create(sold_emoticon=emoticon, buyer=request.user)
         return Response({'message':'결제 완료!'}, status=status.HTTP_200_OK)
+
+
+# 기본 이모티콘 저장
+try:
+    if Emoticon.objects.filter(title="기본"):
+        pass
+    else:
+        base_emoticon = Emoticon(title='기본')
+        base_emoticon.save()
+        input_images = ["/base_emoticon/기본1.png", "/base_emoticon/기본2.jfif", "/base_emoticon/기본3.gif", "/base_emoticon/기본4.png", "/base_emoticon/기본5.png", "/base_emoticon/기본6.gif", "/base_emoticon/기본7.png", "/base_emoticon/기본8.png"]
+        for a in input_images:
+            temp = EmoticonImage(emoticon=base_emoticon, image=a)
+            temp.save()
+except:
+    pass
+
+
+class EmoticonImageView(APIView):
+    def get(self, request):
+        emoticon_images = EmoticonImage.objects.filter(db_status=1)
+        serializer = EmoticonImageSerializer(emoticon_images, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
