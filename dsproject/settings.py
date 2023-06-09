@@ -30,8 +30,6 @@ with open(secret_file,'r') as f:
 SECRET_KEY = secrets.get("SECRET_KEY","")
 REST_API = secrets.get("REST_API","")
 
-SECRET_KEY = secrets.get("SECRET_KEY", "")
-REST_API = secrets.get("REST_API","")
 # 소셜 로그인 API_KEY
 KAKAO_API_KEY = secrets.get("KAKAO_API_KEY", "")
 KAKAO_SECRET_CODE = secrets.get("KAKAO_SECRET_CODE")
