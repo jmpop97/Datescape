@@ -13,6 +13,7 @@ class EmoticonSerializer(serializers.ModelSerializer):
     """이모티콘 조회 / 수정 / 삭제"""
     images = serializers.SerializerMethodField()
     creator_name = serializers.SerializerMethodField()
+    buy = serializers.SerializerMethodField()
 
     def get_images(self, emoticon):
         qs = EmoticonImage.objects.filter(db_status=1, emoticon=emoticon)
@@ -21,7 +22,12 @@ class EmoticonSerializer(serializers.ModelSerializer):
     
     def get_creator_name(self, emoticon):
         return emoticon.creator.username
-
+    
+    def get_buy(self, emoticon):
+        request_user = self.context.get('user')
+        qs = UserEmoticonList.objects.filter(sold_emoticon=emoticon, db_status=1, buyer=request_user)
+        return bool(qs)
+        
     class Meta:
         model = Emoticon
         fields = "__all__"

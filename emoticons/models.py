@@ -23,9 +23,10 @@ class Emoticon(CommonModel):
     0 = 임시저장, 1 = 판매중, 2 = 판매중단
     """
     db_status_choice = [
-        (0, '임시저장'),
+        (0, '신청상태'),
         (1, '판매중'),
         (2, '판매중지'),
+        (3, '신청삭제'),
     ]
 
     creator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True) # User 삭제시 이모티콘은 유지

@@ -4,13 +4,26 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from users.models import CommonModel, User
 from emoticons.models import EmoticonImage
 
-# Create your models here.
+
+class KakaoMapDataBase(CommonModel):
+    """
+    db저장용 모델입니다.
+    """
+    jibun_address = models.CharField(max_length=255)
+    road_address = models.CharField(max_length=255)
+    coordinate_x = models.FloatField()
+    coordinate_y = models.FloatField()
+    
+    def __str__(self):
+        return self.jibun_address
+
+
 class Article(CommonModel):
     """
     게시글 모델입니다.
-    아직 User모델과합치지않아서 User모델은 주석처리해뒀습니다.
     지도연동부분도 지도연동후에 주석을풀겠습니다.
     """
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=256,)
     content = models.TextField()
@@ -72,8 +85,8 @@ class Comment(CommonModel):
         return f'작성자: {self.writer} - 내용: {self.comment}'
 
 class CommentLike(CommonModel):
-    likers = models.ForeignKey(User, on_delete=models.CASCADE)
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+    likers = models.ForeignKey(User, on_delete=models.CASCADE, related_name='like_user')
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='comment_like')
 
     def __str__(self):
-        return self.comment
+        return self.comment.comment
