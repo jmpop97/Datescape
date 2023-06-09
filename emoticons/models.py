@@ -3,9 +3,8 @@ from users.models import CommonModel, User
 # from users.models import User
 # from articles.models import Article
 
-# Create your models here.
 
-# 이모티콘 모델
+# Create your models here.
 class Emoticon(CommonModel):
     """
     이모티콘 모델입니다.
@@ -17,7 +16,6 @@ class Emoticon(CommonModel):
     Emoticon 객체는 제작자를 의미하는 creator필드, 이모티콘 제목을 의미하는 title필드, 이모티콘 판매상태를 의미하는 status필드로 구성됩니다.
     수정/삭제 여부 방향 결정 필요
     """
-
     
     """
     CommonModel의 db_status_choice 오버라이딩
@@ -25,9 +23,10 @@ class Emoticon(CommonModel):
     0 = 임시저장, 1 = 판매중, 2 = 판매중단
     """
     db_status_choice = [
-        (0, '임시저장'),
+        (0, '신청상태'),
         (1, '판매중'),
         (2, '판매중지'),
+        (3, '신청삭제'),
     ]
 
     creator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True) # User 삭제시 이모티콘은 유지
@@ -37,7 +36,7 @@ class Emoticon(CommonModel):
     def __str__(self):
         return self.title
 
-# 이모티콘 이미지 모델
+
 class EmoticonImage(CommonModel):
     """
     이모티콘 이미지 모델입니다.
@@ -50,7 +49,7 @@ class EmoticonImage(CommonModel):
     def __str__(self):
         return f'{self.emoticon.title} - {self.image}'
 
-# 이모티콘 구매 테이블
+
 class UserEmoticonList(CommonModel):
     """
     이모티콘 구매 테이블 모델입니다.

@@ -15,7 +15,6 @@ class ReportUser(CommonModel):
     ]
     db_status = models.PositiveIntegerField(
         choices=db_status_choice, default=1)
-
     reporter = models.ForeignKey(User, on_delete=models.CASCADE)
     report_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reported')
 

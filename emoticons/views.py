@@ -2,7 +2,7 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status, permissions
-from emoticons.serializers import EmoticonSerializer, EmoticonCreateSerializer, UserEmoticonListSerializer
+from emoticons.serializers import EmoticonSerializer, EmoticonCreateSerializer, EmoticonImageSerializer
 from emoticons.models import Emoticon, EmoticonImage, UserEmoticonList
 
 
@@ -25,7 +25,7 @@ class EmoticonView(APIView):
         output: db_status=1, 사용자가 구매한 이모티콘 객체들을 Response
         """
         emoticon = UserEmoticonList.objects.filter(db_status=1, buyer=request.user)
-        qs = []
+        qs = [Emoticon.objects.get(title='기본')]
         for a in emoticon:
             qs.append(a.sold_emoticon)
 
@@ -63,8 +63,8 @@ class EmoticonView(APIView):
         emoticon = get_object_or_404(Emoticon, id=request.data['emoticon_id'], db_status=0)
         """404에러 프론트에서 '판매중으로 수정할 수 없거나 등록되지 않은 이모티콘입니다' 메세지 띄우기"""
         # 프론트 데이터 형식
-        # remove_ids = request.data['remove_images']
-        # ids_list = remove_ids.split(",")
+        remove_ids = request.data['remove_images']
+        ids_list = remove_ids.split(",")
 
         if request.user == emoticon.creator:
             if 'images' in request.data:
@@ -74,12 +74,12 @@ class EmoticonView(APIView):
 
             if serializer.is_valid():
                 serializer.save()
-                # # 제거할 이미지가 있으면 제거해주는 코드
-                # if ids_list[0] != '':
-                #     for id in ids_list:
-                #         k = EmoticonImage.objects.get(id=id)
-                #         k.db_status = 2
-                #         k.save()
+                # 제거할 이미지가 있으면 제거해주는 코드
+                if ids_list[0] != '':
+                    for id in ids_list:
+                        k = EmoticonImage.objects.get(id=id)
+                        k.db_status = 2
+                        k.save()
                 
                 # 이미지 업로드시 생성, 이모티콘에 추가
                 images_data = serializer.context.get('images', None)
@@ -105,11 +105,15 @@ class EmoticonView(APIView):
 
         # 작성자만 삭제 가능하게
         if request.user == emoticon.creator:
-            emoticon.db_status = 2
-            emoticon.save()
-            return Response({"message": "삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
+            if emoticon.db_status == 0:
+                emoticon.db_status = 3
+                emoticon.save()
+                return Response({"message": "삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
+            else:
+                Response({"message": "상품 등록 된 이모티콘은 수정이 불가능합니다."}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({"message": "권한이 없습니다!"}, status=status.HTTP_403_FORBIDDEN)
+
 
 class EmoticonDetailView(APIView):
     """
@@ -128,22 +132,26 @@ class EmoticonDetailView(APIView):
         input: 로그인 권한
         output: 요청 처리에 따라 status 값을 반환
         """
-        emoticon = get_object_or_404(Emoticon, id=emoticon_id, db_status=1)
-        serializer = EmoticonSerializer(emoticon)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        emoticon = get_object_or_404(Emoticon, id=emoticon_id)
+        serializer = EmoticonSerializer(emoticon, context={'user':request.user})
+        if (emoticon.db_status == 0) or (emoticon.db_status == 1):
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response({"message": "dddddd"}, status=status.HTTP_403_FORBIDDEN)
+
 
 class EmoticonListView(APIView):
     """
     전체 이모티콘 조회
     
-    전체 이모티콘 조회 요청을 처리합니다.
+    판매중인 전체 이모티콘 조회 요청을 처리합니다.
     로그인 권한이 요구되며 판매중 상태의 이모티콘 객체들을 반환합니다.
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         """
-        전체 이모티콘 조회 요청을 처리합니다.
+        판매중인 전체 이모티콘 조회 요청을 처리합니다.
 
         input: 로그인 권한
         output: 요청 처리에 따라 data와 status 값을 반환
@@ -151,6 +159,7 @@ class EmoticonListView(APIView):
         emoticon_list = Emoticon.objects.filter(db_status=1)
         serializer = EmoticonSerializer(emoticon_list, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class EmoticonTempListView(APIView):
     """
@@ -166,9 +175,52 @@ class EmoticonTempListView(APIView):
         임시저장 이모티콘 조회 요청을 처리합니다.
 
         요청하는 유저가 제작 신청 한 이모티콘 리스트를 반환합니다.
+        관리자인 경우 신청중인 이모티콘리스트 전체를 반환합니다.
         input: 로그인 권한
         output: 요청 처리에 따라 data와 status 값을 반환
         """
-        emoticon_list = Emoticon.objects.filter(db_status=0, creator=request.user)
-        serializer = EmoticonSerializer(emoticon_list, many=True)
+        if request.user.is_admin == 1: # 관리자인 경우
+            emoticon_list = Emoticon.objects.filter(db_status=0)
+            serializer = EmoticonSerializer(emoticon_list, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        elif request.user.is_admin == 0: # 일반 유저인 경우
+            emoticon_list = Emoticon.objects.filter(db_status=0, creator=request.user)
+            serializer = EmoticonSerializer(emoticon_list, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UserEmoticonListView(APIView):
+    """
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        """
+        """
+        print('야호!', request.data['emoticon_id'], type(request.data['emoticon_id']))
+        emoticon = get_object_or_404(Emoticon, id=int(request.data['emoticon_id']), db_status=1)
+        UserEmoticonList.objects.create(sold_emoticon=emoticon, buyer=request.user)
+        return Response({'message':'결제 완료!'}, status=status.HTTP_200_OK)
+
+
+# 기본 이모티콘 저장
+try:
+    if Emoticon.objects.filter(title="기본"):
+        pass
+    else:
+        base_emoticon = Emoticon(title='기본')
+        base_emoticon.save()
+        input_images = ["/base_emoticon/기본1.png", "/base_emoticon/기본2.jfif", "/base_emoticon/기본3.gif", "/base_emoticon/기본4.png", "/base_emoticon/기본5.png", "/base_emoticon/기본6.gif", "/base_emoticon/기본7.png", "/base_emoticon/기본8.png"]
+        for a in input_images:
+            temp = EmoticonImage(emoticon=base_emoticon, image=a)
+            temp.save()
+except:
+    pass
+
+
+class EmoticonImageView(APIView):
+    def get(self, request):
+        emoticon_images = EmoticonImage.objects.filter(db_status=1)
+        serializer = EmoticonImageSerializer(emoticon_images, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
