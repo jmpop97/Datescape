@@ -1,40 +1,47 @@
 from django.contrib import admin
-from articles.models import (Article, Tag, TagList,
-                             Comment, CommentLike, 
-                             KakaoMapDataBase)
+from articles.models import (
+    Article,
+    Tag,
+    TagList,
+    Comment,
+    CommentLike,
+    KakaoMapDataBase,
+)
 from users.admin import CommonModelAdmin
 
 
 # Register your models here.
-admin.site.register(Tag)
-admin.site.register(KakaoMapDataBase)
+
 
 class TagListInline(admin.TabularInline):
     model = TagList
 
 
 class TagListAdmin(admin.ModelAdmin):
-    list_display = ["id", "tag","article"]
-    list_display_links = ["id", "tag","article"]
-    search_fields = ["id", "tag","article"]
+    list_display = ["id", "tag", "article"]
+    list_display_links = ["id", "tag", "article"]
+    search_fields = ["id", "tag", "article"]
 
 
 class ArticlesAdmin(admin.ModelAdmin):
     list_display = ["id", "title", "content", "score"]
-    list_filter = ["title",]
-    fieldsets = []
-    inlines = [
-        TagListInline
+    list_filter = [
+        "title",
     ]
-    search_fields = ["title", "content",]
+    fieldsets = []
+    inlines = [TagListInline]
+    search_fields = [
+        "title",
+        "content",
+    ]
     ordering = ["title"]
     filter_horizontal = []
-    list_display_links = ["id", "title", "content",]
+    list_display_links = [
+        "id",
+        "title",
+        "content",
+    ]
     extra = 0
-
-
-admin.site.register(TagList, TagListAdmin)
-admin.site.register(Article, ArticlesAdmin)
 
 
 class CommentAdmin(CommonModelAdmin):
@@ -47,5 +54,9 @@ class CommentLikeAdmin(CommonModelAdmin):
     list_display = ("likers", "comment")
 
 
+admin.site.register(Tag)
+admin.site.register(KakaoMapDataBase)
+admin.site.register(TagList, TagListAdmin)
+admin.site.register(Article, ArticlesAdmin)
 admin.site.register(Comment, CommentAdmin)
 admin.site.register(CommentLike, CommentLikeAdmin)
