@@ -12,6 +12,10 @@ from articles.models import (Article, Tag,
 from dsproject import settings
 from django.db.models import Q
 from haversine import haversine, Unit
+from rest_framework import generics
+from rest_framework.pagination import PageNumberPagination
+from .pagination import PaginationHandler
+
 
 import json
 import requests
@@ -118,15 +122,22 @@ class KakaoMapSearchView(APIView):
         else:
             return Response({'error': '결과가 없습니다.'},status=status.HTTP_204_NO_CONTENT)
 
+class CommonPagination(PageNumberPagination):
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
 
-
-class ArticleView(APIView):# serializer 수정? 꾸미기?
+class ArticleView(APIView, PaginationHandler):# serializer 수정? 꾸미기?
+    pagination_class = CommonPagination
     def get(self, request):
         """
         delete에서도 언급하겠지만 db_status 값이 1인 게시글들만 출력되게 작업했습니다.
         """
         articles = Article.objects.filter(db_status=1)
-        serializer = ArticleSerializer(articles, many=True)
+        page = self.paginate_queryset(articles)
+        if page is not None:
+            serializer = self.get_paginated_response(ArticleSerializer(page, many=True).data)
+        else:
+            serializer = ArticleSerializer(articles, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -298,8 +309,8 @@ class ArticleLocationView(APIView):
     사용자 위치를 기반으로 반경 2km에 있는 데이터를 불러옵니다.
     """
     def get(self, request):
-        latitude = self.request.GET.get('latitude', '')
-        longitude = self.request.GET.get('longitude', '')
+        latitude = self.request.query_params.get('latitude', '')
+        longitude = self.request.query_params.get('longitude', '')
         position  = (float(latitude),float(longitude))
         print(position)
         # 필터 조건
@@ -316,3 +327,23 @@ class ArticleLocationView(APIView):
         print(test)
         serializer = MapSearchSerializer(test, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+class ArticleSearchView(generics.ListAPIView):
+    """
+    아티클/태그 검색한 후 해당하는 아티클을 반환합니다.
+    """
+    serializer_class = ArticleSerializer
+    
+    def get_queryset(self):
+        if self.request.query_params.get('option')=='article':
+            queryset = Article.objects.filter(db_status=1)
+            search = self.request.query_params.get('search')
+            if search is not None:
+                queryset = queryset.filter(Q(title__icontains=search) |
+                                                Q(content__icontains=search)
+                                                ).distinct().order_by('-created_at')
+            return queryset
+        # 태그 검색 부분으로 태그 모델 완성되면 수정 예정
+        else:
+            return Article.objects.filter(db_status=1)
