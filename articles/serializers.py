@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from articles.models import Article, Comment, CommentLike, KakaoMapDataBase
+from articles.models import (Article,Tag,
+                            Comment, CommentLike, KakaoMapDataBase)
 
 
 class MapSearchSerializer(serializers.ModelSerializer):
@@ -13,14 +14,22 @@ class MapSearchSerializer(serializers.ModelSerializer):
         return KakaoMapDataBase.objects.create(**validated_data)
 
 
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ['tag']
+
+    # def to_representation(self, instance):
+    #     return instance.tag
 
 
-class ArticleSerializer (serializers.ModelSerializer):
-    """ 게시글 조회, 작성 """
+class ArticleSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.id')
+    tags = TagSerializer(many=True, read_only=True)
+
     class Meta:
         model = Article
-        fields = "__all__"
+        fields = ['id', 'user', 'title', 'content', 'images', 'score', 'tags']
 
 
 class ArticleCreateSerializer (serializers.ModelSerializer):
