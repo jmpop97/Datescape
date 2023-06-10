@@ -114,7 +114,6 @@ class KakaoMapSearchView(APIView):
                 "Authorization": f"KakaoAK {REST_API_KEY}",
             }
             query = request.data.get("query", None)
-            print(query)
             data = {"query": query}
             url = f"https://dapi.kakao.com/v2/local/search/keyword.json?query={query}"
             response = requests.post(url, headers=headers)
@@ -132,10 +131,19 @@ class KakaoMapSearchView(APIView):
 
                 if serializer.is_valid():
                     serializer.save()
-                    print(request.user)
-                    article_serializer.save(
+                    article = article_serializer.save(
                         location=serializer.data["id"], user=request.user
                     )
+                    tags = request.data.get("tags").split("#")
+                    while True:
+                        try:
+                            tags.remove("")
+                        except:
+                            break
+                    for tag in tags:
+                        tag_obj, _ = Tag.objects.get_or_create(tag=tag)
+                        article.tags.add(tag_obj)
+
                     return Response(serializer.data, status=status.HTTP_200_OK)
                 else:
                     return Response(
@@ -174,12 +182,11 @@ class ArticleView(APIView, PaginationHandler):  # serializer 수정? 꾸미기?
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
-        print(request.data.pop("tags"), [])
         tags = request.data.pop("tags", [])
         serializer = ArticleSerializer(data=request.data)
 
         if serializer.is_valid():
-            article = serializer.save(user=request.user)
+            article = serializer.save(user=request.user, location=1)
             for tag in tags:
                 tag_obj, _ = Tag.objects.get_or_create(tag=tag)
                 article.tags.add(tag_obj)
