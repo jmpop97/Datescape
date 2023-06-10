@@ -8,6 +8,7 @@ from rest_framework import status, permissions
 from articles.serializers import (
     ArticleSerializer,
     ArticleCreateSerializer,
+    ArticlePutSerializer,
     CommentSerializer,
     CommentCreateSerializer,
     CommentLikeSerizlizer,
@@ -103,36 +104,51 @@ class KakaoMapCoordinateView(APIView):
 
 class KakaoMapSearchView(APIView):
     """
-    지역명 검색용 뷰입니다.
+    게시글 작성
     """
 
     def post(self, request):
-        headers = {
-            "Authorization": f"KakaoAK {REST_API_KEY}",
-        }
-        query = request.data.get("query", None)
-        data = {"query": query}
-        url = f"https://dapi.kakao.com/v2/local/search/keyword.json?query={query}"
-        response = requests.post(url, headers=headers)
-        data = response.json()
-        documents = data.get("documents")
-        if documents:
-            serializer = MapSearchSerializer(
-                data={
-                    "jibun_address": documents[0].get("address_name"),
-                    "road_address": documents[0].get("road_address_name"),
-                    "coordinate_x": documents[0].get("x"),
-                    "coordinate_y": documents[0].get("y"),
-                }
-            )
+        article_serializer = ArticleCreateSerializer(data=request.data)
+        if article_serializer.is_valid():
+            headers = {
+                "Authorization": f"KakaoAK {REST_API_KEY}",
+            }
+            query = request.data.get("query", None)
+            print(query)
+            data = {"query": query}
+            url = f"https://dapi.kakao.com/v2/local/search/keyword.json?query={query}"
+            response = requests.post(url, headers=headers)
+            data = response.json()
+            documents = data.get("documents")
+            if documents:
+                serializer = MapSearchSerializer(
+                    data={
+                        "jibun_address": documents[0].get("address_name"),
+                        "road_address": documents[0].get("road_address_name"),
+                        "coordinate_x": documents[0].get("x"),
+                        "coordinate_y": documents[0].get("y"),
+                    }
+                )
 
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
+                if serializer.is_valid():
+                    serializer.save()
+                    print(request.user)
+                    article_serializer.save(
+                        location=serializer.data["id"], user=request.user
+                    )
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                else:
+                    return Response(
+                        serializer.errors, status=status.HTTP_400_BAD_REQUEST
+                    )
             else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "결과가 없습니다."}, status=status.HTTP_204_NO_CONTENT
+                )
         else:
-            return Response({"error": "결과가 없습니다."}, status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                article_serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class CommonPagination(PageNumberPagination):
@@ -158,6 +174,7 @@ class ArticleView(APIView, PaginationHandler):  # serializer 수정? 꾸미기?
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
+        print(request.data.pop("tags"), [])
         tags = request.data.pop("tags", [])
         serializer = ArticleSerializer(data=request.data)
 
@@ -188,7 +205,7 @@ class ArticleDetailView(APIView):
 
     def put(self, request, article_id):
         article = get_object_or_404(Article, id=article_id)
-        serializer = ArticleCreateSerializer(article, data=request.data)
+        serializer = ArticlePutSerializer(article, data=request.data)
         # 작성자만 수정 가능하게!
         if request.user == article.user:
             if serializer.is_valid():
