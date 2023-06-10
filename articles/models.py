@@ -52,7 +52,7 @@ class Article(CommonModel):
         ],
     )
     tags = models.ManyToManyField(Tag, through="TagList")
-    # place = models.CharField(max_length=200,null=True,blank=True) #필드를 뭐로 할지 아직 잘 모르겠습니다. 좌표는 숫자라 integer 일 거 같긴 한데 더 만들어보고 정하겠습니다.
+    location = models.ForeignKey(KakaoMapDataBase, on_delete=models.CASCADE)
 
     def __int__(self):
         return self.id
