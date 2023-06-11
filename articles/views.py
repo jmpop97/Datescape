@@ -134,7 +134,7 @@ class KakaoMapSearchView(APIView):
                     article = article_serializer.save(
                         location=serializer.data["id"], user=request.user
                     )
-                    tags = request.data.get("tags").split("#")
+                    tags = request.data.get("tags","").split("#")
                     while True:
                         try:
                             tags.remove("")
