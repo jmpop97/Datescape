@@ -24,7 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-secret_file = os.path.join(BASE_DIR, ".secret/secrets.json")  # secrets.json 파일 위치
+secret_file = os.path.join(
+    BASE_DIR, ".secret/secrets_postgresql.json"
+)  # secrets.json 파일 위치
 with open(secret_file, "r") as f:
     secrets = json.load(f)
 
@@ -100,12 +102,7 @@ WSGI_APPLICATION = "dsproject.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
+DATABASES = secrets.get("DATABASES", "")
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (

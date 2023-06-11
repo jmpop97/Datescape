@@ -416,8 +416,14 @@ class CommentLikeView(APIView):
         if CommentLike.objects.filter(comment=comment, likers=user):
             CommentLike.objects.filter(comment=comment, likers=user).delete()
             comment_likes = len(CommentLike.objects.filter(comment=comment))
-            return Response({"message": "좋아요 취소!", "comment_likes": comment_likes}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "좋아요 취소!", "comment_likes": comment_likes},
+                status=status.HTTP_200_OK,
+            )
         else:
             CommentLike.objects.create(likers=user, comment=comment)
             comment_likes = len(CommentLike.objects.filter(comment=comment))
-            return Response({"message": "좋아요!", "comment_likes": comment_likes}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "좋아요!", "comment_likes": comment_likes},
+                status=status.HTTP_200_OK,
+            )
