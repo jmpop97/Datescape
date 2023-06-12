@@ -5,7 +5,11 @@ from articles import views
 urlpatterns = [
     path("", views.ArticleView.as_view(), name="article_list"),
     path("location-list/", views.LocationListView.as_view(), name="location_list"),
-    path("location-articles/", views.LocationArticlesView.as_view(), name="location_articles"),
+    path(
+        "location-articles/",
+        views.LocationArticlesView.as_view(),
+        name="location_articles",
+    ),
     path("<int:article_id>/", views.ArticleDetailView.as_view(), name="article_detail"),
     path("coordinate/", views.KakaoMapCoordinateView.as_view(), name="coordinate_map"),
     path("article-search/", views.ArticleSearchView.as_view(), name="article_search"),

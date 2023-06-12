@@ -302,11 +302,11 @@ class ArticleSearchView(generics.ListAPIView):
             return queryset
         # 태그 검색
         else:
-            queryset_list=[]
+            queryset_list = []
             queryset = Tag.objects.filter(Q(db_status=1) & Q(tag__icontains=search))
             if search is not None:
                 for a in queryset:
-                    taglist=a.taglist_set.all()
+                    taglist = a.taglist_set.all()
                     for b in taglist:
                         queryset_list.append(b.article)
             return queryset_list
@@ -323,6 +323,7 @@ class LocationArticlesView(generics.ListAPIView):
         location = self.request.query_params.get("location")
         queryset = Article.objects.filter(Q(db_status=1) & Q(location_id=location))
         return queryset
+
 
 class CommentView(APIView):
     """
