@@ -3,5 +3,5 @@ from reports import views
 
 
 urlpatterns = [
-    path('', views.ReportView.as_view(), name="emoticon"),
+    path("", views.ReportView.as_view(), name="emoticon"),
 ]

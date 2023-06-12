@@ -7,6 +7,7 @@ from rest_framework import status
 from .serializers import CustomTokenObtainPairSerializer, UserSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework import permissions
+
 # from .tokens import account_activation_token
 # from django.utils.http               import urlsafe_base64_encode,urlsafe_base64_decode
 # from django.core.mail                import EmailMessage
@@ -15,19 +16,22 @@ from rest_framework import permissions
 # from rest_framework.permissions import AllowAny
 from .models import User
 
-a = getattr(settings, 'KAKAO_API_KEY')
-b = getattr(settings, 'KAKAO_SECRET_CODE')
+a = getattr(settings, "KAKAO_API_KEY")
+b = getattr(settings, "KAKAO_SECRET_CODE")
 print(a, b)
+
 
 class UserView(APIView):
     def post(self, request):
-      serializer = UserSerializer(data=request.data)
-      if serializer.is_valid():
-        serializer.save()
-        return Response({"message":"회원가입완료"}, status=status.HTTP_201_CREATED)
-      else:
-        return Response({"message":f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST)
-    
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "회원가입완료"}, status=status.HTTP_201_CREATED)
+        else:
+            return Response(
+                {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
@@ -35,10 +39,14 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 class mockView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+
     def get(self, request):
         print("로그인된 유저")
         print(request)
-        return Response({"로그인된 유저이름 /// "+f"{request.user}"}, status=status.HTTP_200_OK)
+        return Response(
+            {"로그인된 유저이름 /// " + f"{request.user}"}, status=status.HTTP_200_OK
+        )
+
 
 class KakaoLoginView(APIView):
     def get(self, request):
@@ -49,8 +57,8 @@ class KakaoLoginView(APIView):
         return redirect(
             f"https://kauth.kakao.com/oauth/authorize?response_type=code&client_id={app_key}&redirect_uri={redirect_uri}"
         )
-    
-    def post(self,request):
+
+    def post(self, request):
         code = request.data.get("code", None)
         token_url = f"https://kauth.kakao.com/oauth/token"
         redirect_uri = "http://127.0.0.1:8000/users/kakao/login/callback"
@@ -70,10 +78,11 @@ class KakaoLoginView(APIView):
             },
             headers={"Content-type": "application/x-www-form-urlencoded;charset=utf-8"},
         )
-        
+
         access_token = response.json().get("access_token")
         # access_token = access_token.json().get("access_token")
-        user_data_request = requests.get("https://kapi.kakao.com/v2/user/me",
+        user_data_request = requests.get(
+            "https://kapi.kakao.com/v2/user/me",
             headers={
                 "Authorization": f"Bearer {access_token}",
                 "Content-type": "application/x-www-form-urlencoded;charset=utf-8",
@@ -82,30 +91,34 @@ class KakaoLoginView(APIView):
         user_datajson = user_data_request.json()
         user_data = user_datajson.get("kakao_account").get("profile")
         print(user_data)
-        email = user_datajson.get('kakao_account').get('email')
+        email = user_datajson.get("kakao_account").get("email")
         username = user_data.get("nickname")
         profileimage = user_data.get("profile_image_url")
         try:
             user = User.objects.get(email=email)
-            if user.logintype == 'normal':
-                return Response({'error':'소셜로그인 가입이메일이아닙니다'},status=status.HTTP_400_BAD_REQUEST)
+            if user.logintype == "normal":
+                return Response(
+                    {"error": "소셜로그인 가입이메일이아닙니다"}, status=status.HTTP_400_BAD_REQUEST
+                )
             else:
                 refresh = CustomTokenObtainPairSerializer.get_token(user)
                 refresh["email"] = user.email
                 refresh["nickname"] = user.username
-                refresh['logintype'] = user.logintype
+                refresh["logintype"] = user.logintype
                 return Response(
                     {
                         "refresh": str(refresh),
                         "access": str(refresh.access_token),
                     },
-                    status=status.HTTP_200_OK
+                    status=status.HTTP_200_OK,
                 )
         except:
-            user = User.objects.create_user(email=email,username=nickname, login_type='kakao')
+            user = User.objects.create_user(
+                email=email, username=nickname, login_type="kakao"
+            )
             user.set_unusable_password()
             user.save()
-            profile=Profile.objects.get(user=user)
+            profile = Profile.objects.get(user=user)
             profile.profileimage = profileimage
             profile.save()
             refresh = CustomTokenObtainPairSerializer.get_token(user)
@@ -117,7 +130,7 @@ class KakaoLoginView(APIView):
                     "refresh": str(refresh),
                     "access": str(refresh.access_token),
                 },
-                status=status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
 
     # def get(self, request):
@@ -128,8 +141,7 @@ class KakaoLoginView(APIView):
     #     return redirect(
     #         f"https://kauth.kakao.com/oauth/authorize?response_type=code&client_id={app_key}&redirect_uri={redirect_uri}"
     #     )
-            
-        
+
     # def post(self, request):
     #     print(a,b)
     #     code = request.data.get("code", None)
@@ -150,7 +162,7 @@ class KakaoLoginView(APIView):
     #         },
     #         headers={"Content-type": "application/x-www-form-urlencoded;charset=utf-8"},
     #     )
-        
+
     #     access_token = response.json().get("access_token")
     #     user_url = "https://kapi.kakao.com/v2/user/me"
     #     response = requests.get(
@@ -196,15 +208,18 @@ class KakaoLoginView(APIView):
     #                 "access": str(refresh_token.access_token),
     #             }
     #         )
-    
+
+
 class NaverLoginView(APIView):
     def post(self, request):
         pass
 
+
 class GoogleLoginView(APIView):
     def post(self, request):
         pass
-    
+
+
 class GithubLoginView(APIView):
     def post(self, request):
         pass
