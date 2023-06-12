@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
+from django.core.validators import RegexValidator, FileExtensionValidator
 
 
 class CommonModel(models.Model):
@@ -19,7 +20,7 @@ class CommonModel(models.Model):
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, username, password=None):
+    def create_user(self, email, username, password=None, **extra_fields):
         """
         Creates and saves a User with the given email, username and password.
         """
@@ -29,6 +30,7 @@ class UserManager(BaseUserManager):
         user = self.model(
             email=self.normalize_email(email),
             username=username,
+            **extra_fields,
         )
 
         user.set_password(password)
@@ -55,6 +57,7 @@ class User(AbstractBaseUser):
         'email',
         'username',
         'password',
+        'login_type',
         'profileimage', => 회원가입시에는 기본 프로필 이미지, 로그인후 마이페이지에서 수정
     }
     """
@@ -66,7 +69,10 @@ class User(AbstractBaseUser):
     )
     username = models.CharField("아이디", max_length=50, unique=True)
     profileimage = models.ImageField(
-        upload_to="profile", blank=True, default="profile/default.png"
+        upload_to="profile",
+        blank=True,
+        default="profile/default.png",
+        validators=[FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png"])],
     )
     LOGIN_TYPE = [
         ("normal", "일반"),

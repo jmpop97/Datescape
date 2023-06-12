@@ -62,7 +62,7 @@ class KakaoMapCoordinateView(APIView):
             # 헤더 설정
         }
         # 검색할 좌표 값
-        x, y = 126.531039, 33.499553
+        # x, y = 126.531039, 33.499553
         url = f"https://dapi.kakao.com/v2/local/geo/coord2address.json?x={x}&y={y}"
         response = requests.get(url, headers=headers)
         data = response.json()
@@ -108,33 +108,43 @@ class KakaoMapSearchView(APIView):
     """
 
     def post(self, request):
-        article_serializer = ArticleCreateSerializer(data=request.data)
+        article_serializer = ArticleCreateSerializer(
+            data=request.data, context={"request": request}
+        )
         if article_serializer.is_valid():
+            # Kakao 지도 API를 이용하여 장소 정보 검색 후, MapSearch 모델 생성
             headers = {
                 "Authorization": f"KakaoAK {REST_API_KEY}",
             }
             query = request.data.get("query", None)
-            data = {"query": query}
             url = f"https://dapi.kakao.com/v2/local/search/keyword.json?query={query}"
-            response = requests.post(url, headers=headers)
-            data = response.json()
-            documents = data.get("documents")
-            if documents:
-                serializer = MapSearchSerializer(
-                    data={
-                        "jibun_address": documents[0].get("address_name"),
-                        "road_address": documents[0].get("road_address_name"),
-                        "coordinate_x": documents[0].get("x"),
-                        "coordinate_y": documents[0].get("y"),
-                    }
-                )
+            response = requests.get(url, headers=headers)
+
+            if response.status_code == 200:
+                data = response.json()
+                documents = data.get("documents")
+                if documents:
+                    serializer = MapSearchSerializer(
+                        data={
+                            "jibun_address": documents[0].get("address_name"),
+                            "road_address": documents[0].get("road_address_name"),
+                            "coordinate_x": documents[0].get("x"),
+                            "coordinate_y": documents[0].get("y"),
+                        }
+                    )
 
                 if serializer.is_valid():
-                    serializer.save()
+                    try:
+                        location_id = KakaoMapDataBase.objects.get(
+                            jibun_address=documents[0].get("address_name")
+                        ).id
+                    except:
+                        serializer.save()
+                        location_id = serializer.data["id"]
                     article = article_serializer.save(
-                        location=serializer.data["id"], user=request.user
+                        location=location_id, user=request.user
                     )
-                    tags = request.data.get("tags","").split("#")
+                    tags = request.data.get("tags", "").split("#")
                     while True:
                         try:
                             tags.remove("")
@@ -416,8 +426,14 @@ class CommentLikeView(APIView):
         if CommentLike.objects.filter(comment=comment, likers=user):
             CommentLike.objects.filter(comment=comment, likers=user).delete()
             comment_likes = len(CommentLike.objects.filter(comment=comment))
-            return Response({"message": "좋아요 취소!", "comment_likes": comment_likes}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "좋아요 취소!", "comment_likes": comment_likes},
+                status=status.HTTP_200_OK,
+            )
         else:
             CommentLike.objects.create(likers=user, comment=comment)
             comment_likes = len(CommentLike.objects.filter(comment=comment))
-            return Response({"message": "좋아요!", "comment_likes": comment_likes}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "좋아요!", "comment_likes": comment_likes},
+                status=status.HTTP_200_OK,
+            )
