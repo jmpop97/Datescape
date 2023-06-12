@@ -47,20 +47,30 @@ class mockView(APIView):
             {"로그인된 유저이름 /// " + f"{request.user}"}, status=status.HTTP_200_OK
         )
 
+
 class SocialUrlView(APIView):
-    def post(self,request):
+    def post(self, request):
         print("소셜 인가코드 받기")
-        social = request.data.get('social',None)
+        social = request.data.get("social", None)
         if social is None:
-            return Response({'error':'소셜로그인이 아닙니다'},status=status.HTTP_400_BAD_REQUEST)
-        elif social == 'kakao-login':
-            url = 'https://kauth.kakao.com/oauth/authorize?client_id=' + a + '&redirect_uri=' + "http://127.0.0.1:5500/" + '&response_type=code&prompt=login'
-            return Response({'url':url},status=status.HTTP_200_OK)
+            return Response(
+                {"error": "소셜로그인이 아닙니다"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        elif social == "kakao-login":
+            url = (
+                "https://kauth.kakao.com/oauth/authorize?client_id="
+                + a
+                + "&redirect_uri="
+                + "http://127.0.0.1:5500/"
+                + "&response_type=code&prompt=login"
+            )
+            return Response({"url": url}, status=status.HTTP_200_OK)
         # elif social == 'naver':
         #     url = 'https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=' + config('NAVER_CLIENT_ID') + '&redirect_uri=' + config('REDIRECT_URI') + '&state=STATE_STRING'
-        #     return Response({'url':url},status=status.HTTP_200_OK)   
+        #     return Response({'url':url},status=status.HTTP_200_OK)
         # elif social == 'google':
         #     return Response({'key':config('GOOGLE_API_KEY'),'redirecturi':config('REDIRECT_URI')},status=status.HTTP_200_OK)
+
 
 class KakaoLoginView(APIView):
     def post(self, request):
@@ -122,7 +132,10 @@ class KakaoLoginView(APIView):
                 )
         except:
             user = User.objects.create_user(
-                email=email, username=nickname, profileimage=profileimage, login_type="kakao"
+                email=email,
+                username=nickname,
+                profileimage=profileimage,
+                login_type="kakao",
             )
             user.set_unusable_password()
             user.save()
@@ -137,8 +150,8 @@ class KakaoLoginView(APIView):
                 },
                 status=status.HTTP_200_OK,
             )
-            
-            
+
+
 class NaverLoginView(APIView):
     def post(self, request):
         pass

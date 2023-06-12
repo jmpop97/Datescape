@@ -130,11 +130,17 @@ class KakaoMapSearchView(APIView):
                 )
 
                 if serializer.is_valid():
-                    serializer.save()
+                    try:
+                        location_id = KakaoMapDataBase.objects.get(
+                            jibun_address=documents[0].get("address_name")
+                        ).id
+                    except:
+                        serializer.save()
+                        location_id = serializer.data["id"]
                     article = article_serializer.save(
-                        location=serializer.data["id"], user=request.user
+                        location=location_id, user=request.user
                     )
-                    tags = request.data.get("tags","").split("#")
+                    tags = request.data.get("tags", "").split("#")
                     while True:
                         try:
                             tags.remove("")
@@ -416,8 +422,14 @@ class CommentLikeView(APIView):
         if CommentLike.objects.filter(comment=comment, likers=user):
             CommentLike.objects.filter(comment=comment, likers=user).delete()
             comment_likes = len(CommentLike.objects.filter(comment=comment))
-            return Response({"message": "좋아요 취소!", "comment_likes": comment_likes}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "좋아요 취소!", "comment_likes": comment_likes},
+                status=status.HTTP_200_OK,
+            )
         else:
             CommentLike.objects.create(likers=user, comment=comment)
             comment_likes = len(CommentLike.objects.filter(comment=comment))
-            return Response({"message": "좋아요!", "comment_likes": comment_likes}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "좋아요!", "comment_likes": comment_likes},
+                status=status.HTTP_200_OK,
+            )
