@@ -136,7 +136,7 @@ class KakaoMapSearchView(APIView):
                 if serializer.is_valid():
                     try:
                         location_id = KakaoMapDataBase.objects.get(
-                            jibun_address=documents[0].get("address_name")
+                            road_address=documents[0].get("road_address_name")
                         ).id
                     except:
                         serializer.save()
@@ -153,7 +153,7 @@ class KakaoMapSearchView(APIView):
                     for tag in tags:
                         tag_obj, _ = Tag.objects.get_or_create(tag=tag)
                         article.tags.add(tag_obj)
-
+                    print(serializer.data)
                     return Response(serializer.data, status=status.HTTP_200_OK)
                 else:
                     return Response(
