@@ -7,7 +7,7 @@ class MapSearchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = KakaoMapDataBase
-        fields = ("jibun_address", "road_address", "coordinate_x", "coordinate_y")
+        fields = ("jibun_address", "road_address", "coordinate_x", "coordinate_y", "id")
 
     def create(self, validated_data):
         return KakaoMapDataBase.objects.create(**validated_data)
@@ -28,10 +28,49 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Article
-        fields = ["id", "user", "title", "content", "images", "score", "tags"]
+        fields = [
+            "id",
+            "user",
+            "title",
+            "content",
+            "images",
+            "score",
+            "tags",
+        ]
+
+    def create(self, validated_data):
+        print(validated_data)
+        validated_data["location"] = KakaoMapDataBase.objects.get(
+            id=validated_data["location"]
+        )
+        return super().create(validated_data)
 
 
 class ArticleCreateSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source="user.id")
+    tags = TagSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Article
+        fields = [
+            "id",
+            "user",
+            "title",
+            "content",
+            "images",
+            "score",
+            "tags",
+        ]
+
+    def create(self, validated_data):
+        print(validated_data)
+        validated_data["location"] = KakaoMapDataBase.objects.get(
+            id=validated_data["location"]
+        )
+        return super().create(validated_data)
+
+
+class ArticlePutSerializer(serializers.ModelSerializer):
     """상세 게시글 조회"""
 
     user = serializers.ReadOnlyField(source="user.id")

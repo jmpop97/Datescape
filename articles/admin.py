@@ -34,7 +34,6 @@ class ArticlesAdmin(admin.ModelAdmin):
         "title",
         "content",
     ]
-    ordering = ["title"]
     filter_horizontal = []
     list_display_links = [
         "id",
