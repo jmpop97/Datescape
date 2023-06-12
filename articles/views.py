@@ -62,7 +62,7 @@ class KakaoMapCoordinateView(APIView):
             # 헤더 설정
         }
         # 검색할 좌표 값
-        x, y = 126.531039, 33.499553
+        # x, y = 126.531039, 33.499553
         url = f"https://dapi.kakao.com/v2/local/geo/coord2address.json?x={x}&y={y}"
         response = requests.get(url, headers=headers)
         data = response.json()
@@ -108,26 +108,30 @@ class KakaoMapSearchView(APIView):
     """
 
     def post(self, request):
-        article_serializer = ArticleCreateSerializer(data=request.data)
+        article_serializer = ArticleCreateSerializer(
+            data=request.data, context={"request": request}
+        )
         if article_serializer.is_valid():
+            # Kakao 지도 API를 이용하여 장소 정보 검색 후, MapSearch 모델 생성
             headers = {
                 "Authorization": f"KakaoAK {REST_API_KEY}",
             }
             query = request.data.get("query", None)
-            data = {"query": query}
             url = f"https://dapi.kakao.com/v2/local/search/keyword.json?query={query}"
-            response = requests.post(url, headers=headers)
-            data = response.json()
-            documents = data.get("documents")
-            if documents:
-                serializer = MapSearchSerializer(
-                    data={
-                        "jibun_address": documents[0].get("address_name"),
-                        "road_address": documents[0].get("road_address_name"),
-                        "coordinate_x": documents[0].get("x"),
-                        "coordinate_y": documents[0].get("y"),
-                    }
-                )
+            response = requests.get(url, headers=headers)
+
+            if response.status_code == 200:
+                data = response.json()
+                documents = data.get("documents")
+                if documents:
+                    serializer = MapSearchSerializer(
+                        data={
+                            "jibun_address": documents[0].get("address_name"),
+                            "road_address": documents[0].get("road_address_name"),
+                            "coordinate_x": documents[0].get("x"),
+                            "coordinate_y": documents[0].get("y"),
+                        }
+                    )
 
                 if serializer.is_valid():
                     try:

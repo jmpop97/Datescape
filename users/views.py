@@ -19,6 +19,7 @@ from .models import User
 
 a = getattr(settings, "KAKAO_API_KEY")
 b = getattr(settings, "KAKAO_SECRET_CODE")
+# print(a, b)
 
 
 class UserView(APIView):
