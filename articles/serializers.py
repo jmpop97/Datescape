@@ -51,20 +51,26 @@ class ArticleSerializer(serializers.ModelSerializer):
             id=validated_data["location"]
         )
         return super().create(validated_data)
-    
+
 
 class MapSearchSerializer(serializers.ModelSerializer):
     """지도정보 db저장"""
+
     article_set = ArticleSerializer(many=True, read_only=True)
-    
 
     class Meta:
         model = KakaoMapDataBase
-        fields = ("jibun_address", "road_address", "coordinate_x", "coordinate_y", "id", "article_set")
+        fields = (
+            "jibun_address",
+            "road_address",
+            "coordinate_x",
+            "coordinate_y",
+            "id",
+            "article_set",
+        )
 
     def create(self, validated_data):
         return KakaoMapDataBase.objects.create(**validated_data)
-
 
     def get_jibun_address(self, obj):
         kakao_map_data = obj.location
