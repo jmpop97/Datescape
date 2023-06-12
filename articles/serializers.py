@@ -9,17 +9,6 @@ from articles.models import (
 )
 
 
-class MapSearchSerializer(serializers.ModelSerializer):
-    """지도정보 db저장"""
-
-    class Meta:
-        model = KakaoMapDataBase
-        fields = ("jibun_address", "road_address", "coordinate_x", "coordinate_y", "id")
-
-    def create(self, validated_data):
-        return KakaoMapDataBase.objects.create(**validated_data)
-
-
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
@@ -62,7 +51,7 @@ class ArticleSerializer(serializers.ModelSerializer):
             id=validated_data["location"]
         )
         return super().create(validated_data)
-
+    
     def get_jibun_address(self, obj):
         kakao_map_data = obj.location
         jibun_address = kakao_map_data.jibun_address
@@ -81,7 +70,19 @@ class ArticleSerializer(serializers.ModelSerializer):
     def get_coordinate_y(self, obj):
         kakao_map_data = obj.location
         coordinate_y = kakao_map_data.coordinate_y
-        return coordinate_y
+        return coordinate_y    
+
+class MapSearchSerializer(serializers.ModelSerializer):
+    """지도정보 db저장"""
+    article_set = ArticleSerializer(many=True, read_only=True)
+    
+
+    class Meta:
+        model = KakaoMapDataBase
+        fields = ("jibun_address", "road_address", "coordinate_x", "coordinate_y", "id", "article_set")
+
+    def create(self, validated_data):
+        return KakaoMapDataBase.objects.create(**validated_data)
 
 
 class ArticleImageSerializer(serializers.ModelSerializer):
