@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import CustomTokenObtainPairSerializer, UserSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import permissions
 
 # from .tokens import account_activation_token
@@ -73,7 +74,7 @@ class KakaoLoginView(APIView):
             print("400error")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        response = requests.post(
+        access_token = requests.post(
             token_url,
             data={
                 "grant_type": "authorization_code",
@@ -85,8 +86,8 @@ class KakaoLoginView(APIView):
             headers={"Content-type": "application/x-www-form-urlencoded;charset=utf-8"},
         )
 
-        access_token = response.json().get("access_token")
-        # access_token = access_token.json().get("access_token")
+        # access_token = response.json().get("access_token")
+        access_token = access_token.json().get("access_token")
         user_data_request = requests.get(
             "https://kapi.kakao.com/v2/user/me",
             headers={
@@ -103,15 +104,15 @@ class KakaoLoginView(APIView):
         profileimage = user_data.get("profile_image_url")
         try:
             user = User.objects.get(email=email)
-            if user.logintype == "normal":
+            if user.login_type == "normal":
                 return Response(
                     {"error": "소셜로그인 가입이메일이아닙니다"}, status=status.HTTP_400_BAD_REQUEST
                 )
             else:
-                refresh = CustomTokenObtainPairSerializer.get_token(user)
+                refresh = RefreshToken.for_user(user)
                 refresh["email"] = user.email
                 refresh["nickname"] = user.username
-                refresh["logintype"] = user.logintype
+                refresh["login_type"] = user.login_type
                 return Response(
                     {
                         "refresh": str(refresh),
@@ -125,7 +126,7 @@ class KakaoLoginView(APIView):
             )
             user.set_unusable_password()
             user.save()
-            refresh = CustomTokenObtainPairSerializer.get_token(user)
+            refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
             refresh["username"] = user.username
             refresh["login_type"] = user.login_type
