@@ -238,7 +238,7 @@ class ArticleDetailView(APIView):
             return Response({"message": "권한이 없습니다!"}, status=status.HTTP_403_FORBIDDEN)
 
 
-class ArticleLocationView(APIView):
+class LocationListView(APIView):
     """
     사용자 위치를 기반으로 반경 2km에 있는 데이터를 불러옵니다.
     """
@@ -247,7 +247,6 @@ class ArticleLocationView(APIView):
         latitude = self.request.query_params.get("latitude", "")
         longitude = self.request.query_params.get("longitude", "")
         position = (float(latitude), float(longitude))
-        print(position)
         # 필터 조건
         q = Q()
         q.add(
@@ -260,14 +259,12 @@ class ArticleLocationView(APIView):
         q.add(Q(db_status=1), q.AND)
         # 필터링
         near_articles = KakaoMapDataBase.objects.filter(q)
-        print(near_articles)
         # 내 위치와 필터링된 객체 사이의 거리가 2km 이하인 것만 가져오기
         test = [
             na
             for na in near_articles
             if haversine(position, (na.coordinate_y, na.coordinate_x)) <= 2
         ]
-        print(test)
         serializer = MapSearchSerializer(test, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -280,9 +277,10 @@ class ArticleSearchView(generics.ListAPIView):
     serializer_class = ArticleSerializer
 
     def get_queryset(self):
+        search = self.request.query_params.get("search")
+        # 글 검색
         if self.request.query_params.get("option") == "article":
             queryset = Article.objects.filter(db_status=1)
-            search = self.request.query_params.get("search")
             if search is not None:
                 queryset = (
                     queryset.filter(
@@ -292,10 +290,29 @@ class ArticleSearchView(generics.ListAPIView):
                     .order_by("-created_at")
                 )
             return queryset
-        # 태그 검색 부분으로 태그 모델 완성되면 수정 예정
+        # 태그 검색
         else:
-            return Article.objects.filter(db_status=1)
+            queryset_list=[]
+            queryset = Tag.objects.filter(Q(db_status=1) & Q(tag__icontains=search))
+            if search is not None:
+                for a in queryset:
+                    taglist=a.taglist_set.all()
+                    for b in taglist:
+                        queryset_list.append(b.article)
+            return queryset_list
 
+
+class LocationArticlesView(generics.ListAPIView):
+    """
+    장소 별로 리뷰를 받아오기 위한 view입니다.
+    """
+
+    serializer_class = ArticleSerializer
+
+    def get_queryset(self):
+        location = self.request.query_params.get("location")
+        queryset = Article.objects.filter(Q(db_status=1) & Q(location_id=location))
+        return queryset
 
 class CommentView(APIView):
     """

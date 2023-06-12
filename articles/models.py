@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from users.models import CommonModel, User
 from emoticons.models import EmoticonImage
+from django.urls import reverse
 
 
 class KakaoMapDataBase(CommonModel):
@@ -63,6 +64,10 @@ class Article(CommonModel):
 
     def __str__(self):
         return self.title
+    
+    def get_absolute_url(self):
+        return reverse("article_detail", kwargs={"article_id": self.pk})
+    
 
     class Meta:
         db_table = "article"
