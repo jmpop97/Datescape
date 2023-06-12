@@ -37,7 +37,9 @@ class Article(CommonModel):
     지도연동부분도 지도연동후에 주석을풀겠습니다.
     """
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        User, related_name="article_user", on_delete=models.CASCADE
+    )
     title = models.CharField(
         max_length=256,
     )
@@ -65,7 +67,12 @@ class Article(CommonModel):
         return self.title
 
     class Meta:
-        db_table = "article"
+        db_table = "articles"
+
+
+class ArticleImage(models.Model):
+    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    image = models.ImageField("이미지", upload_to="article", blank=True, null=True)
 
 
 class TagList(CommonModel):
