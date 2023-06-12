@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from users.models import CommonModel, User
 from emoticons.models import EmoticonImage
+from django.urls import reverse
 
 
 class KakaoMapDataBase(CommonModel):
@@ -37,7 +38,9 @@ class Article(CommonModel):
     지도연동부분도 지도연동후에 주석을풀겠습니다.
     """
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        User, related_name="article_user", on_delete=models.CASCADE
+    )
     title = models.CharField(
         max_length=256,
     )
@@ -63,9 +66,18 @@ class Article(CommonModel):
 
     def __str__(self):
         return self.title
+    
+    def get_absolute_url(self):
+        return reverse("article_detail", kwargs={"article_id": self.pk})
+    
 
     class Meta:
-        db_table = "article"
+        db_table = "articles"
+
+
+class ArticleImage(models.Model):
+    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    image = models.ImageField("이미지", upload_to="article", blank=True, null=True)
 
 
 class TagList(CommonModel):
