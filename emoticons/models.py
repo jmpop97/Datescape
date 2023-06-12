@@ -1,5 +1,6 @@
 from django.db import models
 from users.models import CommonModel, User
+from django.urls import reverse
 
 # from users.models import User
 # from articles.models import Article
@@ -38,6 +39,9 @@ class Emoticon(CommonModel):
 
     def __str__(self):
         return self.title
+
+    def get_absolute_url(self):
+        return reverse("emoticon_detail", kwargs={"emoticon_id": self.pk})
 
 
 class EmoticonImage(CommonModel):
