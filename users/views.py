@@ -112,6 +112,9 @@ class KakaoLoginView(APIView):
         email = user_datajson.get("kakao_account").get("email")
         nickname = user_data.get("nickname")
         profileimage = user_data.get("profile_image_url")
+        # print(email)
+        # print(nickname)
+        # print(profileimage)
         try:
             user = User.objects.get(email=email)
             if user.login_type == "normal":
@@ -121,7 +124,7 @@ class KakaoLoginView(APIView):
             else:
                 refresh = RefreshToken.for_user(user)
                 refresh["email"] = user.email
-                refresh["nickname"] = user.username
+                refresh["username"] = user.username
                 refresh["login_type"] = user.login_type
                 return Response(
                     {
