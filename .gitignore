@@ -1,5 +1,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/windows,macos,django,python,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,macos,django,python,visualstudiocode
+###self ignore###
+todo.py
+sqlrequirments.txt
+
 ###secret key###
 .secret
 ### Django ###
@@ -12,7 +16,7 @@ db.sqlite3
 db.sqlite3-journal
 media
 ### migration ###
-todo.py
+
 **/migrations/**.py
 !**/migrations/__init__.py
 
