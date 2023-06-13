@@ -33,13 +33,17 @@ REST_API = secrets.get("REST_API", "")
 NAVER_MAPS_API_ID = secrets.get("NAVER_MAPS_API_ID", "")
 NAVER_MAPS_API_KEY = secrets.get("NAVER_MAPS_API_KEY", "")
 
-# 소셜 로그인 API_KEY
+# 소셜 로그인 REDIRECT_URI
+REDIRECT_URI = secrets.get("REDIRECT_URI")
+
+# 소셜 로그인 API_KEY, SECRET_CODE
 KAKAO_API_KEY = secrets.get("KAKAO_API_KEY", "")
 KAKAO_SECRET_CODE = secrets.get("KAKAO_SECRET_CODE")
-REDIRECT_URI = secrets.get("REDIRECT_URI")
-# NAVER_API_KEY = get_secret("NAVER_ID")
-# GOOGLE_API_KEY = get_secret("GOOGLE_ID")
-# GITHUB_API_KEY = get_secret("GITHUB_ID")
+NAVER_API_KEY = secrets.get("NAVER_API_KEY", "")
+NAVER_SECRET_CODE = secrets.get("NAVER_SECRET_CODE")
+GOOGLE_API_KEY = secrets.get("GOOGLE_API_KEY")
+GITHUB_API_KEY = secrets.get("GITHUB_API_KEY")
+GITHUB_SECRET_CODE = secrets.get("GITHUB_SECRET_CODE")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
