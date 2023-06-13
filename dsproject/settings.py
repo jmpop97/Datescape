@@ -36,6 +36,7 @@ NAVER_MAPS_API_KEY = secrets.get("NAVER_MAPS_API_KEY", "")
 # 소셜 로그인 API_KEY
 KAKAO_API_KEY = secrets.get("KAKAO_API_KEY", "")
 KAKAO_SECRET_CODE = secrets.get("KAKAO_SECRET_CODE")
+REDIRECT_URI = secrets.get("REDIRECT_URI")
 # NAVER_API_KEY = get_secret("NAVER_ID")
 # GOOGLE_API_KEY = get_secret("GOOGLE_ID")
 # GITHUB_API_KEY = get_secret("GITHUB_ID")

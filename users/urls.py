@@ -14,7 +14,7 @@ urlpatterns = [
     path("mock/", views.mockView.as_view()),
     # path('/activate/<str:uidb64>/<str:token>', views.Activate.as_view()),
     path("social/", views.SocialUrlView.as_view(), name="social_login"),
-    path("kakao-login/", views.KakaoLoginView.as_view()),
+    path("kakao-login/", views.KakaoLoginView.as_view(), name="kakao_login"),
     # path("naver-login/", views.NaverLoginView.as_view()),
     # path("google-login/", views.GoogleLoginView.as_view()),
     # path("github-login/", views.GithubLoginView.as_view()),
