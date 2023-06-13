@@ -6,7 +6,7 @@ from emoticons.models import EmoticonImage
 from django.urls import reverse
 
 
-class KakaoMapDataBase(CommonModel):
+class MapDataBase(CommonModel):
     """
     db저장용 모델입니다.
     """
@@ -55,7 +55,7 @@ class Article(CommonModel):
         ],
     )
     tags = models.ManyToManyField(Tag, through="TagList")
-    location = models.ForeignKey(KakaoMapDataBase, on_delete=models.CASCADE)
+    location = models.ForeignKey(MapDataBase, on_delete=models.CASCADE)
 
     def __int__(self):
         return self.id
