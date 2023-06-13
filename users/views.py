@@ -17,8 +17,13 @@ from rest_framework import permissions
 # from rest_framework.permissions import AllowAny
 from .models import User
 
-a = getattr(settings, "KAKAO_API_KEY")
-b = getattr(settings, "KAKAO_SECRET_CODE")
+KAKAO_API_KEY = getattr(settings, "KAKAO_API_KEY")
+KAKAO_SECRET_CODE = getattr(settings, "KAKAO_SECRET_CODE")
+REDIRECT_URI = getattr(settings, "REDIRECT_URI")
+# REDIRECT_URI = "http://127.0.0.1:5500/"
+# print(KAKAO_API_KEY)
+# print(KAKAO_SECRET_CODE)
+print(REDIRECT_URI)
 
 
 class UserView(APIView):
@@ -59,9 +64,9 @@ class SocialUrlView(APIView):
         elif social == "kakao-login":
             url = (
                 "https://kauth.kakao.com/oauth/authorize?client_id="
-                + a
+                + KAKAO_API_KEY
                 + "&redirect_uri="
-                + "http://127.0.0.1:5500/"
+                + REDIRECT_URI
                 + "&response_type=code&prompt=login"
             )
             return Response({"url": url}, status=status.HTTP_200_OK)
@@ -78,7 +83,7 @@ class KakaoLoginView(APIView):
         code = request.data.get("code", None)
         # print(code)
         token_url = f"https://kauth.kakao.com/oauth/token"
-        redirect_uri = "http://127.0.0.1:5500/"
+        redirect_uri = REDIRECT_URI
 
         if code is None:
             print("400error")
@@ -88,10 +93,10 @@ class KakaoLoginView(APIView):
             token_url,
             data={
                 "grant_type": "authorization_code",
-                "client_id": a,
+                "client_id": KAKAO_API_KEY,
                 "redirect_uri": redirect_uri,
                 "code": code,
-                "client_secret": b,
+                "client_secret": KAKAO_SECRET_CODE,
             },
             headers={"Content-type": "application/x-www-form-urlencoded;charset=utf-8"},
         )
