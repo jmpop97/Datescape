@@ -30,6 +30,8 @@ with open(secret_file, "r") as f:
 
 SECRET_KEY = secrets.get("SECRET_KEY", "")
 REST_API = secrets.get("REST_API", "")
+NAVER_MAPS_API_ID = secrets.get("NAVER_MAPS_API_ID", "")
+NAVER_MAPS_API_KEY = secrets.get("NAVER_MAPS_API_KEY", "")
 
 # 소셜 로그인 API_KEY
 KAKAO_API_KEY = secrets.get("KAKAO_API_KEY", "")

@@ -1,5 +1,6 @@
 from django.db import models
 from users.models import CommonModel, User
+from django.urls import reverse
 
 # from users.models import User
 # from articles.models import Article
@@ -39,6 +40,9 @@ class Emoticon(CommonModel):
     def __str__(self):
         return self.title
 
+    def get_absolute_url(self):
+        return reverse("emoticon_detail", kwargs={"emoticon_id": self.pk})
+
 
 class EmoticonImage(CommonModel):
     """
@@ -63,13 +67,14 @@ class UserEmoticonList(CommonModel):
     이모티콘 구매 테이블 모델입니다.
     클라이언트가 구매한(사용할 수 있는) 이모티콘들을 나타냅니다.
     UserEmoticonList객체는 구매자를 의미하는 buyer필드, 구매한 이모티콘을 의미하는 emoticon필드로 구성됩니다.
+    DB를 판매량 조회로 사용하기 위해 유저, 이모티콘 delete_on은 SET_NULL로 채택했습니다.
     """
 
     buyer = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="emoticon_list"
+        User, on_delete=models.SET_NULL, related_name="emoticon_list", null=True
     )
     sold_emoticon = models.ForeignKey(
-        Emoticon, on_delete=models.CASCADE, related_name="sold_emoticon"
+        Emoticon, on_delete=models.SET_NULL, related_name="sold_emoticon", null=True
     )
 
     def __str__(self):
