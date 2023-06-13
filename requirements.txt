@@ -6,12 +6,15 @@ django-cleanup==7.0.0
 django-cors-headers==4.0.0
 djangorestframework==3.14.0
 djangorestframework-simplejwt==5.2.2
+Faker==18.10.1
 haversine==2.8.0
 idna==3.4
 Pillow==9.5.0
 PyJWT==2.7.0
+python-dateutil==2.8.2
 pytz==2023.3
 requests==2.31.0
+six==1.16.0
 sqlparse==0.4.4
 typing_extensions==4.6.3
 tzdata==2023.3
