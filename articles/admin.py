@@ -1,11 +1,12 @@
 from django.contrib import admin
 from articles.models import (
     Article,
+    ArticleImage,
     Tag,
     TagList,
     Comment,
     CommentLike,
-    KakaoMapDataBase,
+    MapDataBase,
 )
 from users.admin import CommonModelAdmin
 
@@ -54,8 +55,9 @@ class CommentLikeAdmin(CommonModelAdmin):
 
 
 admin.site.register(Tag)
-admin.site.register(KakaoMapDataBase)
+admin.site.register(MapDataBase)
 admin.site.register(TagList, TagListAdmin)
 admin.site.register(Article, ArticlesAdmin)
+admin.site.register(ArticleImage)
 admin.site.register(Comment, CommentAdmin)
 admin.site.register(CommentLike, CommentLikeAdmin)

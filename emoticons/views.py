@@ -68,12 +68,15 @@ class EmoticonView(APIView):
         output: 요청 처리에 따라 status 값을 반환
         """
         emoticon = get_object_or_404(
-            Emoticon, id=request.data["emoticon_id"], db_status=0
+            Emoticon, id=request.data.get("emoticon_id"), db_status=0
         )
         """404에러 프론트에서 '판매중으로 수정할 수 없거나 등록되지 않은 이모티콘입니다' 메세지 띄우기"""
         # 프론트 데이터 형식
-        remove_ids = request.data["remove_images"]
-        ids_list = remove_ids.split(",")
+        remove_ids = request.data.get("remove_images")
+        if remove_ids:
+            ids_list = remove_ids.split(",")
+        else:
+            ids_list = []
 
         if request.user == emoticon.creator:
             if "images" in request.data:
@@ -88,7 +91,7 @@ class EmoticonView(APIView):
             if serializer.is_valid():
                 serializer.save()
                 # 제거할 이미지가 있으면 제거해주는 코드
-                if ids_list[0] != "":
+                if ids_list != None:
                     for id in ids_list:
                         k = EmoticonImage.objects.get(id=id)
                         k.db_status = 2
@@ -162,7 +165,9 @@ class EmoticonDetailView(APIView):
         if (emoticon.db_status == 0) or (emoticon.db_status == 1):
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response({"message": "dddddd"}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {"message": "상품 등록 대기중인 이모티콘 입니다!"}, status=status.HTTP_403_FORBIDDEN
+            )
 
 
 class EmoticonListView(APIView):
@@ -224,7 +229,6 @@ class UserEmoticonListView(APIView):
 
     def post(self, request):
         """ """
-        print("야호!", request.data["emoticon_id"], type(request.data["emoticon_id"]))
         emoticon = get_object_or_404(
             Emoticon, id=int(request.data["emoticon_id"]), db_status=1
         )
@@ -240,14 +244,14 @@ try:
         base_emoticon = Emoticon(title="기본")
         base_emoticon.save()
         input_images = [
-            "/base_emoticon/기본1.png",
-            "/base_emoticon/기본2.jfif",
-            "/base_emoticon/기본3.gif",
-            "/base_emoticon/기본4.png",
-            "/base_emoticon/기본5.png",
-            "/base_emoticon/기본6.gif",
-            "/base_emoticon/기본7.png",
-            "/base_emoticon/기본8.png",
+            "base_emoticon/기본1.png",
+            "base_emoticon/기본2.jfif",
+            "base_emoticon/기본3.gif",
+            "base_emoticon/기본4.png",
+            "base_emoticon/기본5.png",
+            "base_emoticon/기본6.gif",
+            "base_emoticon/기본7.png",
+            "base_emoticon/기본8.png",
         ]
         for a in input_images:
             temp = EmoticonImage(emoticon=base_emoticon, image=a)
@@ -257,7 +261,56 @@ except:
 
 
 class EmoticonImageView(APIView):
+    """이모티콘 이미지 전체"""
+
     def get(self, request):
         emoticon_images = EmoticonImage.objects.filter(db_status=1)
         serializer = EmoticonImageSerializer(emoticon_images, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SoldEmoticonCountListView(APIView):
+    """관리자/ 판매중+판매중단 이모티콘 리스트 조회"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        판매중+판매중단 이모티콘 리스트 조회(관리자만 조회 가능)
+        판매자 지급금 계산을 위한 상품등록 된 이모티콘 리스트 조회
+        """
+        if request.user.is_admin == 1:
+            emoticon_list = []
+            for a in Emoticon.objects.filter(db_status=1):
+                emoticon_list.append(a)
+            for b in Emoticon.objects.filter(db_status=2):
+                emoticon_list.append(b)
+            serializer = EmoticonSerializer(emoticon_list, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {"message": "관리자만 접근 가능합니다!"}, status=status.HTTP_403_FORBIDDEN
+            )
+
+
+class SoldEmoticonCountView(APIView):
+    """이모티콘 누적 판매량 조회"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, emoticon_id):
+        """
+        누적 판매량 조회(관리자만 조회 가능)
+        판매자 지급금 계산을 위한 판매량 조회
+        """
+        emoticon = get_object_or_404(Emoticon, id=emoticon_id)
+        sold_count = len(UserEmoticonList.objects.filter(sold_emoticon=emoticon))
+        serializer = EmoticonSerializer(
+            emoticon, context={"user": request.user, "sold_count": sold_count}
+        )
+        if (emoticon.db_status == 1) or (emoticon.db_status == 2):
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {"message": "상품 등록 대기중인 이모티콘 입니다!"}, status=status.HTTP_403_FORBIDDEN
+            )

@@ -13,8 +13,9 @@ from articles.serializers import (
     CommentCreateSerializer,
     CommentLikeSerizlizer,
     MapSearchSerializer,
+    NaverCreateSerializer,
 )
-from articles.models import Article, Tag, Comment, CommentLike, KakaoMapDataBase
+from articles.models import Article, Tag, Comment, CommentLike, MapDataBase
 from dsproject import settings
 from django.db.models import Q
 from haversine import haversine, Unit
@@ -28,6 +29,112 @@ import requests
 
 # Create your views here.
 REST_API_KEY = settings.REST_API
+NAVER_MAPS_API_GW_API_KEY_ID = settings.NAVER_MAPS_API_ID
+NAVER_MAPS_API_GW_API_KEY = settings.NAVER_MAPS_API_KEY
+
+
+class NaverMapView(APIView):
+    """
+    네이버지도 api사용
+    게시글 작성
+    """
+
+    def get(self, request):
+        # api_key = 네이버 지도 API 키값
+        search_url = "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode"
+
+        # 도로명주소 가져와서 api 요청 파라미터에 담기
+        front_accept = "제주특별자치도 서귀포시 가가로 14"
+        road_address = f"{front_accept}"
+        params = {"query": road_address}
+        headers = {
+            "X-NCP-APIGW-API-KEY-ID": NAVER_MAPS_API_GW_API_KEY_ID,
+            "X-NCP-APIGW-API-KEY": NAVER_MAPS_API_GW_API_KEY,
+        }
+
+        # api 요청 보내기
+        response = requests.get(search_url, headers=headers, params=params)
+        result = response.json()
+        address = result["addresses"][0]
+        address_info = {
+            "roadAddress": address["roadAddress"],
+            "jibunAddress": address["jibunAddress"],
+            "coordinate_x": address["x"],
+            "coordinate_y": address["y"],
+        }
+        return Response(address_info)
+
+    def post(self, request):
+        # 검색할 지번 또는 도로명 주소
+        query = request.data.get("query")
+
+        # 네이버 지도 API로부터 검색 결과 가져오기
+        headers = {
+            "X-NCP-APIGW-API-KEY-ID": NAVER_MAPS_API_GW_API_KEY_ID,
+            "X-NCP-APIGW-API-KEY": NAVER_MAPS_API_GW_API_KEY,
+        }
+        params = {"query": query}
+        search_url = "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode"
+        response = requests.get(search_url, headers=headers, params=params)
+        result = response.json()
+
+        # 검색 결과에서 주소 정보 추출
+        address = result["addresses"][0]
+        address_info = {
+            "road_address": address["roadAddress"],
+            "jibun_address": address["jibunAddress"],
+            "coordinate_x": address["x"],
+            "coordinate_y": address["y"],
+        }
+        # print("======1=======")
+        # print(address_info)
+        # print("======2=======")
+
+        # 게시글 정보
+        title = request.data.get("title")
+        content = request.data.get("content")
+        score = request.data.get("score")
+        image = request.data.get("image")
+
+        # MapSearch 모델 저장
+        serializer = MapSearchSerializer(data=address_info)
+        if serializer.is_valid(raise_exception=True):
+            try:
+                serializer_id = MapDataBase.objects.get(
+                    road_address=address["roadAddress"]
+                ).id
+            except:
+                serializer.save()
+                serializer_id = serializer.data["id"]
+        # 게시글 저장
+        article_serializer = NaverCreateSerializer(
+            data={
+                "title": title,
+                "content": content,
+                "score": score,
+                "image": image,
+                "location": serializer_id,
+            },
+            context={"request": request},
+        )
+        # print(serializer_id,"id")
+        # print(serializer_id, "serializer_id")
+        if article_serializer.is_valid():
+            article = article_serializer.save(user=request.user)
+            tags = request.data.get("tags", "").split("#")
+            while True:
+                try:
+                    tags.remove("")
+                except:
+                    break
+            for tag in tags:
+                tag_obj, _ = Tag.objects.get_or_create(tag=tag)
+                article.tags.add(tag_obj)
+            return Response(article_serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(
+                article_serializer.errors, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class KakaoSaveView(APIView):
@@ -36,7 +143,7 @@ class KakaoSaveView(APIView):
     """
 
     def get(self, request):
-        map_data = KakaoMapDataBase.objects.all()
+        map_data = MapDataBase.objects.all()
         serializer = MapSearchSerializer(map_data, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -62,7 +169,7 @@ class KakaoMapCoordinateView(APIView):
             # 헤더 설정
         }
         # 검색할 좌표 값
-        x, y = 126.531039, 33.499553
+        # x, y = 126.531039, 33.499553
         url = f"https://dapi.kakao.com/v2/local/geo/coord2address.json?x={x}&y={y}"
         response = requests.get(url, headers=headers)
         data = response.json()
@@ -108,33 +215,50 @@ class KakaoMapSearchView(APIView):
     """
 
     def post(self, request):
-        article_serializer = ArticleCreateSerializer(data=request.data)
+        article_serializer = ArticleCreateSerializer(
+            data=request.data, context={"request": request}
+        )
         if article_serializer.is_valid():
+            # Kakao 지도 API를 이용하여 장소 정보 검색 후, MapSearch 모델 생성
             headers = {
                 "Authorization": f"KakaoAK {REST_API_KEY}",
             }
             query = request.data.get("query", None)
-            data = {"query": query}
             url = f"https://dapi.kakao.com/v2/local/search/keyword.json?query={query}"
-            response = requests.post(url, headers=headers)
-            data = response.json()
-            documents = data.get("documents")
-            if documents:
-                serializer = MapSearchSerializer(
-                    data={
-                        "jibun_address": documents[0].get("address_name"),
-                        "road_address": documents[0].get("road_address_name"),
-                        "coordinate_x": documents[0].get("x"),
-                        "coordinate_y": documents[0].get("y"),
-                    }
-                )
-
-                if serializer.is_valid():
-                    serializer.save()
-                    article = article_serializer.save(
-                        location=serializer.data["id"], user=request.user
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                # print(data)
+                documents = data.get("documents")
+                # print("===111===","KakaoMapSearchView")
+                # print(documents,"documents","KakaoMapSearchView")
+                # print(documents[0],"documents[0]","KakaoMapSearchView")
+                # print("===222===","KakaoMapSearchView")
+                if documents:
+                    serializer = MapSearchSerializer(
+                        data={
+                            "jibun_address": documents[0].get("address_name"),
+                            "road_address": documents[0].get("road_address_name"),
+                            "coordinate_x": documents[0].get("x"),
+                            "coordinate_y": documents[0].get("y"),
+                        }
                     )
-                    tags = request.data.get("tags","").split("#")
+                    # print("====11====","KakaoMapSearchView")
+                    # print(data,"KakaoMapSearchView")
+                    # print("====22====","KakaoMapSearchView")
+                if serializer.is_valid():
+                    try:
+                        location_id = MapDataBase.objects.get(
+                            road_address=documents[0].get("road_address_name")
+                        ).id
+                    except:
+                        serializer.save()
+                        location_id = serializer.data["id"]
+                    article = article_serializer.save(
+                        location=location_id, user=request.user
+                    )
+                    print(location_id, "location_id")
+                    tags = request.data.get("tags", "").split("#")
                     while True:
                         try:
                             tags.remove("")
@@ -143,8 +267,8 @@ class KakaoMapSearchView(APIView):
                     for tag in tags:
                         tag_obj, _ = Tag.objects.get_or_create(tag=tag)
                         article.tags.add(tag_obj)
-
-                    return Response(serializer.data, status=status.HTTP_200_OK)
+                    # print(serializer.data)
+                    return Response(article_serializer.data, status=status.HTTP_200_OK)
                 else:
                     return Response(
                         serializer.errors, status=status.HTTP_400_BAD_REQUEST
@@ -238,16 +362,19 @@ class ArticleDetailView(APIView):
             return Response({"message": "권한이 없습니다!"}, status=status.HTTP_403_FORBIDDEN)
 
 
-class ArticleLocationView(APIView):
+class LocationListView(APIView):
     """
     사용자 위치를 기반으로 반경 2km에 있는 데이터를 불러옵니다.
+
+    input: 쿼리=latitude&longitude
+    ouput: 장소들과 그 장소에 달린 게시물들
+
     """
 
     def get(self, request):
         latitude = self.request.query_params.get("latitude", "")
         longitude = self.request.query_params.get("longitude", "")
         position = (float(latitude), float(longitude))
-        print(position)
         # 필터 조건
         q = Q()
         q.add(
@@ -259,7 +386,7 @@ class ArticleLocationView(APIView):
         )
         q.add(Q(db_status=1), q.AND)
         # 필터링
-        near_articles = KakaoMapDataBase.objects.filter(q)
+        near_articles = MapDataBase.objects.filter(q)
         print(near_articles)
         # 내 위치와 필터링된 객체 사이의 거리가 2km 이하인 것만 가져오기
         test = [
@@ -267,7 +394,6 @@ class ArticleLocationView(APIView):
             for na in near_articles
             if haversine(position, (na.coordinate_y, na.coordinate_x)) <= 2
         ]
-        print(test)
         serializer = MapSearchSerializer(test, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -275,14 +401,19 @@ class ArticleLocationView(APIView):
 class ArticleSearchView(generics.ListAPIView):
     """
     아티클/태그 검색한 후 해당하는 아티클을 반환합니다.
+
+    input: 쿼리=option&search
+    ouput: 검색어가 포함된 게시물들
+
     """
 
     serializer_class = ArticleSerializer
 
     def get_queryset(self):
+        search = self.request.query_params.get("search")
+        # 글 검색
         if self.request.query_params.get("option") == "article":
             queryset = Article.objects.filter(db_status=1)
-            search = self.request.query_params.get("search")
             if search is not None:
                 queryset = (
                     queryset.filter(
@@ -292,9 +423,33 @@ class ArticleSearchView(generics.ListAPIView):
                     .order_by("-created_at")
                 )
             return queryset
-        # 태그 검색 부분으로 태그 모델 완성되면 수정 예정
+        # 태그 검색
         else:
-            return Article.objects.filter(db_status=1)
+            queryset_list = []
+            queryset = Tag.objects.filter(Q(db_status=1) & Q(tag__icontains=search))
+            if search is not None:
+                for a in queryset:
+                    taglist = a.taglist_set.all()
+                    for b in taglist:
+                        queryset_list.append(b.article)
+            return queryset_list
+
+
+class LocationArticlesView(generics.ListAPIView):
+    """
+    장소 별로 리뷰를 받아오기 위한 view입니다.
+
+    input: 쿼리=location_id
+    output: 쿼리로 받아온 장소에 달린 게시물들
+
+    """
+
+    serializer_class = ArticleSerializer
+
+    def get_queryset(self):
+        location = self.request.query_params.get("location")
+        queryset = Article.objects.filter(Q(db_status=1) & Q(location_id=location))
+        return queryset
 
 
 class CommentView(APIView):
@@ -416,8 +571,14 @@ class CommentLikeView(APIView):
         if CommentLike.objects.filter(comment=comment, likers=user):
             CommentLike.objects.filter(comment=comment, likers=user).delete()
             comment_likes = len(CommentLike.objects.filter(comment=comment))
-            return Response({"message": "좋아요 취소!", "comment_likes": comment_likes}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "좋아요 취소!", "comment_likes": comment_likes},
+                status=status.HTTP_200_OK,
+            )
         else:
             CommentLike.objects.create(likers=user, comment=comment)
             comment_likes = len(CommentLike.objects.filter(comment=comment))
-            return Response({"message": "좋아요!", "comment_likes": comment_likes}, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "좋아요!", "comment_likes": comment_likes},
+                status=status.HTTP_200_OK,
+            )

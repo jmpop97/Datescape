@@ -19,6 +19,7 @@ class ReportUser(CommonModel):
     report_user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="reported"
     )
+    comment = models.TextField(default="", blank=True)
 
 
 class ReportArticle(CommonModel):
@@ -35,6 +36,7 @@ class ReportArticle(CommonModel):
     report_article = models.ForeignKey(
         Article, on_delete=models.CASCADE, related_name="reported"
     )
+    comment = models.TextField(default="", blank=True)
 
 
 class ReportComment(CommonModel):
@@ -51,3 +53,4 @@ class ReportComment(CommonModel):
     report_comment = models.ForeignKey(
         Comment, on_delete=models.CASCADE, related_name="reported"
     )
+    comment = models.TextField(default="", blank=True)

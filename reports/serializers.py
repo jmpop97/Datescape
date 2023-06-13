@@ -12,7 +12,10 @@ class ReportUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ReportUser
-        fields = ("report_id",)
+        fields = (
+            "report_id",
+            "comment",
+        )
 
     def create(self, validated_data):
         validated_data["report_user"] = User.objects.get(
@@ -30,10 +33,12 @@ class ReportArticleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ReportArticle
-        fields = ("report_id",)
+        fields = (
+            "report_id",
+            "comment",
+        )
 
     def create(self, validated_data):
-        print(validated_data)
         validated_data["report_article"] = Article.objects.get(
             id=validated_data["report_article"]
         )
@@ -49,7 +54,10 @@ class ReportCommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ReportComment
-        fields = ("report_id",)
+        fields = (
+            "report_id",
+            "comment",
+        )
 
     def create(self, validated_data):
         validated_data["report_comment"] = Comment.objects.get(
