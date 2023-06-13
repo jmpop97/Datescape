@@ -51,6 +51,25 @@ class ArticleSerializer(serializers.ModelSerializer):
             id=validated_data["location"]
         )
         return super().create(validated_data)
+    def get_jibun_address(self, obj):
+        kakao_map_data = obj.location
+        jibun_address = kakao_map_data.jibun_address
+        return jibun_address
+
+    def get_road_address(self, obj):
+        kakao_map_data = obj.location
+        road_address = kakao_map_data.road_address
+        return road_address
+
+    def get_coordinate_x(self, obj):
+        kakao_map_data = obj.location
+        coordinate_x = kakao_map_data.coordinate_x
+        return coordinate_x
+
+    def get_coordinate_y(self, obj):
+        kakao_map_data = obj.location
+        coordinate_y = kakao_map_data.coordinate_y
+        return coordinate_y
 
 
 class MapSearchSerializer(serializers.ModelSerializer):
@@ -72,25 +91,7 @@ class MapSearchSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         return KakaoMapDataBase.objects.create(**validated_data)
 
-    def get_jibun_address(self, obj):
-        kakao_map_data = obj.location
-        jibun_address = kakao_map_data.jibun_address
-        return jibun_address
-
-    def get_road_address(self, obj):
-        kakao_map_data = obj.location
-        road_address = kakao_map_data.road_address
-        return road_address
-
-    def get_coordinate_x(self, obj):
-        kakao_map_data = obj.location
-        coordinate_x = kakao_map_data.coordinate_x
-        return coordinate_x
-
-    def get_coordinate_y(self, obj):
-        kakao_map_data = obj.location
-        coordinate_y = kakao_map_data.coordinate_y
-        return coordinate_y
+    
 
 
 class MapSearchSerializer(serializers.ModelSerializer):

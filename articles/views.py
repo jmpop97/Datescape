@@ -251,6 +251,10 @@ class ArticleDetailView(APIView):
 class LocationListView(APIView):
     """
     사용자 위치를 기반으로 반경 2km에 있는 데이터를 불러옵니다.
+    
+    input: 쿼리=latitude&longitude
+    ouput: 장소들과 그 장소에 달린 게시물들
+    
     """
 
     def get(self, request):
@@ -282,6 +286,10 @@ class LocationListView(APIView):
 class ArticleSearchView(generics.ListAPIView):
     """
     아티클/태그 검색한 후 해당하는 아티클을 반환합니다.
+    
+    input: 쿼리=option&search
+    ouput: 검색어가 포함된 게시물들
+    
     """
 
     serializer_class = ArticleSerializer
@@ -315,6 +323,10 @@ class ArticleSearchView(generics.ListAPIView):
 class LocationArticlesView(generics.ListAPIView):
     """
     장소 별로 리뷰를 받아오기 위한 view입니다.
+    
+    input: 쿼리=location_id
+    output: 쿼리로 받아온 장소에 달린 게시물들
+    
     """
 
     serializer_class = ArticleSerializer
