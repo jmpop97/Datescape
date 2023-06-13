@@ -39,7 +39,6 @@ class ReportArticleSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        print(validated_data)
         validated_data["report_article"] = Article.objects.get(
             id=validated_data["report_article"]
         )
