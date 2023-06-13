@@ -63,8 +63,26 @@ INSTALLED_APPS = [
     "articles",
     "reports",
     "emoticons",
+    "storages",
 ]
 
+###aws###
+AWS_ACCESS_KEY_ID = secrets.get("AWS_ACCESS_KEY_ID")  # .csv 파일에 있는 내용을 입력 Access key ID
+AWS_SECRET_ACCESS_KEY = secrets.get("AWS_SECRET_ACCESS_KEY")
+
+AWS_REGION = "ap-northeast-2"
+
+###S3 Storages
+AWS_STORAGE_BUCKET_NAME = "datescapebucket"  # 설정한 버킷 이름
+AWS_S3_CUSTOM_DOMAIN = "%s.s3.%s.amazonaws.com" % (AWS_STORAGE_BUCKET_NAME, AWS_REGION)
+AWS_S3_OBJECT_PARAMETERS = {
+    "CacheControl": "max-age=86400",
+}
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+MEDIA_ROOT = os.path.join(BASE_DIR, "path/to/store/my/files/")
+
+
+###
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -154,8 +172,8 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "static"
 
-MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+# MEDIA_URL = "media/"
+# MEDIA_ROOT = BASE_DIR / "media"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
