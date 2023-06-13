@@ -41,14 +41,14 @@ class EmoticonSerializer(serializers.ModelSerializer):
             sold_emoticon=emoticon, db_status=1, buyer=request_user
         )
         return bool(qs)
-    
+
     def get_req_username(self, emoticon):
         if self.context.get("user"):
             request_user = self.context.get("user")
             return request_user.username
         else:
             return ""
-    
+
     def get_req_user_email(self, emoticon):
         if self.context.get("user"):
             request_user = self.context.get("user")

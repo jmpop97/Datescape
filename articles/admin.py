@@ -6,7 +6,7 @@ from articles.models import (
     TagList,
     Comment,
     CommentLike,
-    KakaoMapDataBase,
+    MapDataBase,
 )
 from users.admin import CommonModelAdmin
 
@@ -55,7 +55,7 @@ class CommentLikeAdmin(CommonModelAdmin):
 
 
 admin.site.register(Tag)
-admin.site.register(KakaoMapDataBase)
+admin.site.register(MapDataBase)
 admin.site.register(TagList, TagListAdmin)
 admin.site.register(Article, ArticlesAdmin)
 admin.site.register(ArticleImage)
