@@ -63,6 +63,7 @@ class ArticleSerializer(serializers.ModelSerializer):
         )
         return super().create(validated_data)
 
+
     def get_jibun_address(self, obj):
         kakao_map_data = obj.location
         jibun_address = kakao_map_data.jibun_address
@@ -102,6 +103,7 @@ class MapSearchSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return MapDataBase.objects.create(**validated_data)
+
 
 
 class MapSearchSerializer(serializers.ModelSerializer):
