@@ -93,6 +93,26 @@ class MapSearchSerializer(serializers.ModelSerializer):
         return coordinate_y
 
 
+class MapSearchSerializer(serializers.ModelSerializer):
+    """지도정보 db저장"""
+
+    article_set = ArticleSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = KakaoMapDataBase
+        fields = (
+            "jibun_address",
+            "road_address",
+            "coordinate_x",
+            "coordinate_y",
+            "id",
+            "article_set",
+        )
+
+    def create(self, validated_data):
+        return KakaoMapDataBase.objects.create(**validated_data)
+
+
 class ArticleImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ArticleImage
