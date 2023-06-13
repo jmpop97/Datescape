@@ -64,27 +64,28 @@ class EmoticonCreateTest(APITestCase):
 
     def test_create_emoticon_with_image(self):
         """이미지 파일 같이 생성"""
-        # 임시 이미지 파일 생성
-        temp_file = tempfile.NamedTemporaryFile()
-        temp_file.name = "image.png"
-        image_file = get_temporary_image(temp_file)
-        image_file.seek(0)
-        self.emoticon_data["images"] = image_file
+        # 임시 이미지 파일 다중 생성
+        for i in range(10):
+            temp_file = tempfile.NamedTemporaryFile()
+            temp_file.name = f"image{i}.png"
+            image_file = get_temporary_image(temp_file)
+            image_file.seek(0)
+            self.emoticon_data["images"].append(image_file)
 
         # post요청
         response = self.client.post(
             path=reverse("emoticon"),
-            data=encode_multipart(data=self.emoticon_data, boundary=BOUNDARY),
+            data=encode_multipart(data=self.emoticon_data, boundary=BOUNDARY),            
             content_type=MULTIPART_CONTENT,
             HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
         )
         # print(response.data)
-        # print('이모티콘',Emoticon.objects.all())
-        # print('이모티콘 이미지',EmoticonImage.objects.all())
+        # print('이모티콘',Emoticon.objects.get(id=2))
+        # print('이모티콘 이미지',EmoticonImage.objects.filter(emoticon=Emoticon.objects.get(id=2)))
         self.assertEqual(response.status_code, 200)
 
 
-class EmoticonLi(APITestCase):
+class EmoticonCRUDTest(APITestCase):
     """유저 이모티콘 가져오기"""
 
     @classmethod
@@ -123,15 +124,15 @@ class EmoticonLi(APITestCase):
                 path=url, HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
             )
             # print('response확인', response.data)
-            serializer = EmoticonSerializer(emoticon).data
+            serializer = EmoticonSerializer(emoticon, context={"user": self.user}).data
+            # print('serializer확인', serializer)
             for key, value in serializer.items():
-                # print('serializer확인', serializer)
                 self.assertEqual(response.data[key], value)
-            self.assertEqual(emoticon.title, response.data["title"])
+                self.assertEqual(emoticon.title, response.data["title"])
 
     def test_put_emoticon(self):
         """임시저장 이모티콘 수정"""
-        print("pk확인용", self.emoticon_one.pk)
+        # print("pk확인용", self.emoticon_one.pk)
         response = self.client.put(
             path=reverse("emoticon"),
             data={"emoticon_id": self.emoticon_one.pk, "title": "수정 된 이모티콘"},
@@ -150,4 +151,58 @@ class EmoticonLi(APITestCase):
             },
             HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
         )
+        self.assertEqual(response.status_code, 200)
+
+
+class PaymentTest(APITestCase):
+    """이모티콘 구매 테이블 생성"""
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_data = {
+            "email": "test@test@.com",
+            "username": "test",
+            "password": "test",
+        }
+        cls.user = User.objects.create_user("test@test.com", "test", "test")
+        cls.faker = Faker()
+        # 이모티콘 더미 데이터 생성(단일)
+        cls.emoticon_data = {
+            "title": "test emoticon",
+            "images": [],
+            "db_status_choice": 0,
+            "db_status": 1,
+        }
+
+    def setUp(self):
+        self.access_token = self.client.post(
+            reverse("token_obtain_pair"), self.user_data
+        ).data["access"]
+
+    def test_user_buy_emoticon(self):
+        """이모티콘 생성 / 이미지 파일 같이 생성"""
+        # 임시 이미지 파일 생성
+        temp_file = tempfile.NamedTemporaryFile()
+        temp_file.name = "image.png"
+        image_file = get_temporary_image(temp_file)
+        image_file.seek(0)
+        self.emoticon_data["images"] = image_file
+
+        # 이모티콘 생성 post요청
+        rsp_emoticon = self.client.post(
+            path=reverse("emoticon"),
+            data=encode_multipart(data=self.emoticon_data, boundary=BOUNDARY),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+
+        # 구매 post요청
+        response = self.client.post(
+            path=reverse("user_buy_emoticon"),
+            data={
+                "emoticon_id":2,
+                "user_id": self.user.pk
+            },
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+
         self.assertEqual(response.status_code, 200)
