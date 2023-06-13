@@ -29,7 +29,7 @@ class EmoticonCreateTest(APITestCase):
     def setUpTestData(cls):
         """생성용 data"""
         cls.user_data = {
-            "email": "test@test@.com",
+            "email": "test@test.com",
             "username": "test",
             "password": "test",
         }
@@ -91,7 +91,7 @@ class EmoticonCRUDTest(APITestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user_data = {
-            "email": "test@test@.com",
+            "email": "test@test.com",
             "username": "test",
             "password": "test",
         }
@@ -159,7 +159,7 @@ class PaymentTest(APITestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user_data = {
-            "email": "test@test@.com",
+            "email": "test@test.com",
             "username": "test",
             "password": "test",
         }
@@ -206,3 +206,129 @@ class PaymentTest(APITestCase):
         )
 
         self.assertEqual(response.status_code, 200)
+
+
+class EmoticonListTest(APITestCase):
+    """판매중 이모티콘 전체 조회"""
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_data = {
+            "email": "test@test.com",
+            "username": "test",
+            "password": "test",
+        }
+        cls.user = User.objects.create_user("test@test.com", "test", "test")
+        cls.faker = Faker()
+        # 이모티콘 더미 데이터 생성(다수)
+        cls.emoticons = []
+        for i in range(10):
+            if i%2 == 0:
+                cls.user_faker = User.objects.create_user(
+                    cls.faker.email(), cls.faker.name(), cls.faker.word()
+                )
+                cls.emoticons.append(
+                    Emoticon.objects.create(creator=cls.user_faker, title=cls.faker.word(), db_status=1) # 판매중
+                )
+            else:
+                cls.user_faker = User.objects.create_user(
+                    cls.faker.email(), cls.faker.name(), cls.faker.word()
+                )
+                cls.emoticons.append(
+                    Emoticon.objects.create(creator=cls.user_faker, title=cls.faker.word(), db_status=0) # 임시저장
+                )
+
+    def setUp(self):
+        self.access_token = self.client.post(
+            reverse("token_obtain_pair"), self.user_data
+        ).data["access"]
+
+    def test_emoticon_list_all(self):
+        """판매중 이모티콘 전체 가져오기"""
+        # 이모티콘 조회 get요청
+        rsp_emoticon_list = self.client.get(
+            path=reverse("emoticon_list"),
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        # for i, a in enumerate(rsp_emoticon_list.data):
+            # print(f"리스트 {i}: id-{a['id']} / 판매중:{a['db_status']}")
+
+        self.assertEqual(rsp_emoticon_list.status_code, 200)
+
+
+class EmoticonTempListTest(APITestCase):
+    """판매중 이모티콘 전체 조회"""
+    @classmethod
+    def setUpTestData(cls):
+        cls.user_data = {
+            "email": "test@test.com",
+            "username": "test",
+            "password": "test",
+        }
+        cls.superuser_data = {
+            "email": "admin@admin.com",
+            "username": "admin",
+            "password": "admin",
+        }
+        cls.user = User.objects.create_user("test@test.com", "test", "test")
+        cls.superuser = User.objects.create_superuser("admin@admin.com", "admin", "admin")
+        cls.faker = Faker()
+        # 이모티콘 더미 데이터 생성(다수)
+        cls.emoticons = []
+        for i in range(10):
+            if i%2 == 0:
+                cls.user_faker = User.objects.create_user(
+                    cls.faker.email(), cls.faker.name(), cls.faker.word()
+                )
+                cls.emoticons.append(
+                    Emoticon.objects.create(creator=cls.user_faker, title=cls.faker.word(), db_status=1) # 판매중
+                )
+            else:
+                cls.user_faker = User.objects.create_user(
+                    cls.faker.email(), cls.faker.name(), cls.faker.word()
+                )
+                cls.emoticons.append(
+                    Emoticon.objects.create(creator=cls.user_faker, title=cls.faker.word(), db_status=0) # 임시저장
+                )
+        cls.emoticons.append(
+                    Emoticon.objects.create(creator=cls.user, title=cls.faker.word(), db_status=0) # request.user의 임시저장
+                )
+
+    def setUp(self):
+        self.access_token = self.client.post(
+            reverse("token_obtain_pair"), self.user_data
+        ).data["access"]
+        self.superaccess_token = self.client.post(
+            reverse("token_obtain_pair"), self.superuser_data
+        ).data["access"]
+
+    def test_emoticon_list_all_user(self):
+        """임시저장중 이모티콘 가져오기"""
+        # 일반유저 이모티콘 조회 get요청
+        rsp_emoticon_list = self.client.get(
+            path=reverse("emoticon_temp_list"),
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        # for i, a in enumerate(rsp_emoticon_list.data):
+            # print(f"리스트 {i}: id-{a['id']} / 임시저장:{a['db_status']}")
+        self.assertEqual(rsp_emoticon_list.status_code, 200)
+
+    def test_emoticon_list_all_superuser(self):
+        """임시저장중 이모티콘 가져오기"""
+        # 관리자유저 이모티콘 조회 get요청
+        rsp_emoticon_list = self.client.get(
+            path=reverse("emoticon_temp_list"),
+            HTTP_AUTHORIZATION=f"Bearer {self.superaccess_token}",
+        )
+        # for i, a in enumerate(rsp_emoticon_list.data):
+            # print(f"리스트 {i}: id-{a['id']} / 임시저장:{a['db_status']}")
+        self.assertEqual(rsp_emoticon_list.status_code, 200)
+
+
+class EmoticonImageTest(APITestCase):
+    def test_emoticon_images_all(self):
+        """이모티콘 이미지 전부 다 가져오기"""
+        rsp_emoticon_images = self.client.get(
+            path=reverse("emoticon_image"),
+        )
+        print('확인:',rsp_emoticon_images.data)
+        self.assertEqual(rsp_emoticon_images.status_code, 200)
