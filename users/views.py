@@ -28,8 +28,8 @@ NAVER_SECRET_CODE = getattr(settings, "NAVER_SECRET_CODE")
 # 깃허브
 GITHUB_API_KEY = getattr(settings, "GITHUB_API_KEY")
 GITHUB_SECRET_CODE = getattr(settings, "GITHUB_SECRET_CODE")
-# REDIRECT_URI = getattr(settings, "REDIRECT_URI")
-REDIRECT_URI = "http://127.0.0.1:5500/"
+REDIRECT_URI = getattr(settings, "REDIRECT_URI")
+#REDIRECT_URI = "http://127.0.0.1:5500/"
 # print(GITHUB_API_KEY)
 # print(GITHUB_SECRET_CODE)
 # print(REDIRECT_URI)
