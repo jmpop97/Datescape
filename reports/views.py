@@ -26,9 +26,9 @@ class ReportView(APIView):
     def report_user(self, request):
         """request_type:   "user" """
         serializer = ReportUserSerializer(data=request.data)
+        print(request.user)
         if serializer.is_valid():
-            serializer.save(reporter=1)
-            print("save")
+            serializer.save(reporter=request.user.id)
             status_is = status.HTTP_200_OK
             message_is = {"message": "저장완료"}
         else:
@@ -40,8 +40,7 @@ class ReportView(APIView):
         """request_type:   "article" """
         serializer = ReportArticleSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(reporter=1)
-            print("save")
+            serializer.save(reporter=request.user.id)
             status_is = status.HTTP_200_OK
             message_is = {"message": "저장완료"}
         else:
@@ -53,8 +52,7 @@ class ReportView(APIView):
         """request_type:   "comment" """
         serializer = ReportCommentSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(reporter=1)
-            print("save")
+            serializer.save(reporter=request.user.id)
             status_is = status.HTTP_200_OK
             message_is = {"message": "저장완료"}
         else:

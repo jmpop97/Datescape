@@ -29,41 +29,33 @@ REST_API_KEY = settings.REST_API
 NAVER_MAPS_API_GW_API_KEY_ID = settings.NAVER_MAPS_API_ID
 NAVER_MAPS_API_GW_API_KEY = settings.NAVER_MAPS_API_KEY
 
+
 class CommonPagination(PageNumberPagination):
     page_size_query_param = "page_size"
     max_page_size = 1000
 
 
-class NaverMapView(APIView):
+class ArticleView(APIView, PaginationHandler):
     """
     네이버지도 api사용
     게시글 작성
     """
 
+    pagination_class = CommonPagination
+
     def get(self, request):
-        # api_key = 네이버 지도 API 키값
-        search_url = "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode"
-
-        # 도로명주소 가져와서 api 요청 파라미터에 담기
-        front_accept = "제주특별자치도 서귀포시 가가로 14"
-        road_address = f"{front_accept}"
-        params = {"query": road_address}
-        headers = {
-            "X-NCP-APIGW-API-KEY-ID": NAVER_MAPS_API_GW_API_KEY_ID,
-            "X-NCP-APIGW-API-KEY": NAVER_MAPS_API_GW_API_KEY,
-        }
-
-        # api 요청 보내기
-        response = requests.get(search_url, headers=headers, params=params)
-        result = response.json()
-        address = result["addresses"][0]
-        address_info = {
-            "roadAddress": address["roadAddress"],
-            "jibunAddress": address["jibunAddress"],
-            "coordinate_x": address["x"],
-            "coordinate_y": address["y"],
-        }
-        return Response(address_info)
+        """
+        delete에서도 언급하겠지만 db_status 값이 1인 게시글들만 출력되게 작업했습니다.
+        """
+        articles = Article.objects.filter(db_status=1)
+        page = self.paginate_queryset(articles)
+        if page is not None:
+            serializer = self.get_paginated_response(
+                ArticleSerializer(page, many=True).data
+            )
+        else:
+            serializer = ArticleSerializer(articles, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
         # 검색할 지번 또는 도로명 주소
@@ -78,7 +70,6 @@ class NaverMapView(APIView):
         search_url = "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode"
         response = requests.get(search_url, headers=headers, params=params)
         result = response.json()
-
         # 검색 결과에서 주소 정보 추출
         address = result["addresses"][0]
         address_info = {
@@ -87,15 +78,11 @@ class NaverMapView(APIView):
             "coordinate_x": address["x"],
             "coordinate_y": address["y"],
         }
-        # print("======1=======")
-        # print(address_info)
-        # print("======2=======")
 
         # 게시글 정보
         title = request.data.get("title")
         content = request.data.get("content")
         score = request.data.get("score")
-        image = request.data.get("image")
 
         # MapSearch 모델 저장
         serializer = MapSearchSerializer(data=address_info)
@@ -113,13 +100,10 @@ class NaverMapView(APIView):
                 "title": title,
                 "content": content,
                 "score": score,
-                "image": image,
                 "location": serializer_id,
             },
-            context={"request": request},
+            context={"images": request.data.getlist("images")},
         )
-        # print(serializer_id,"id")
-        # print(serializer_id, "serializer_id")
         if article_serializer.is_valid():
             article = article_serializer.save(user=request.user)
             tags = request.data.get("tags", "").split("#")
@@ -136,6 +120,49 @@ class NaverMapView(APIView):
             return Response(
                 article_serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class ArticleDetailView(APIView):
+    """
+    delete에서도 언급하겠지만 db_status 값이 1인 게시글들만 출력되게 작업했습니다.
+    """
+
+    def get(self, request, article_id):
+        article = Article.objects.filter(id=article_id, db_status=1).first()
+        if article:
+            # db_status가 1인 게시글이 있는 경우
+            serializer = ArticleSerializer(article)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            # db_status가 2인 게시글이 없는 경우
+            return Response("삭제된 글입니다.", status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request, article_id):
+        article = get_object_or_404(Article, id=article_id)
+        serializer = ArticleSerializer(article, data=request.data)
+        # 작성자만 수정 가능하게!
+        if request.user == article.user:
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response("권한이 없습니다.", status=status.HTTP_403_FORBIDDEN)
+
+    def delete(self, request, article_id):
+        """
+        게시글을 삭제합니다.
+        db_status 값을 1에서 2로 수정해 줌으로써 get 요청받는 부분에서 표시가 되지 않게 적용해 주었습니다.
+        """
+        article = get_object_or_404(Article, id=article_id, db_status=1)
+        # 작성자만 삭제 가능하게!
+        if request.user == article.user:
+            article.db_status = 2
+            article.save()
+            return Response({"message": "삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({"message": "권한이 없습니다!"}, status=status.HTTP_403_FORBIDDEN)
 
 
 class LocationListView(APIView):
@@ -198,6 +225,7 @@ class ArticleSearchView(generics.ListAPIView):
                     .distinct()
                     .order_by("-created_at")
                 )
+                print(queryset)
             return queryset
         # 태그 검색
         else:

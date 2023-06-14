@@ -7,10 +7,21 @@ from articles.models import (
     CommentLike,
     MapDataBase,
 )
+
+
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
         fields = ["tag"]
+
+    # def to_representation(self, instance):
+    #     return instance.tag
+
+
+class ArticleImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ArticleImage
+        fields = ("id", "images", "article")
 
 
 class ArticleSerializer(serializers.ModelSerializer):
@@ -45,12 +56,11 @@ class ArticleSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
-        images_data = self.context.get("request").FILES.getlist("images")
-        print(validated_data, "벨리~")
-        # print(images_data)
-        # print("===========images_data============")
         # 위에서 변경된 부분 : getlist() 메서드를 사용해서 여러 개의 이미지 파일 처리
+        # 게시글 저장
         article = Article.objects.create(**validated_data)
+        # 이미지 저장
+        images_data = self.context.get("images", None)
         for image_data in images_data:
             ArticleImage.objects.create(article=article, image=image_data)
             # 위에서 변경된 부분 : images -> image
@@ -88,18 +98,21 @@ class ArticleSerializer(serializers.ModelSerializer):
 class MapSearchSerializer(serializers.ModelSerializer):
     """지도정보 db저장"""
 
+    article_set = ArticleSerializer(many=True, read_only=True)
+
     class Meta:
         model = MapDataBase
-        fields = ("jibun_address", "road_address", "coordinate_x", "coordinate_y", "id")
+        fields = (
+            "jibun_address",
+            "road_address",
+            "coordinate_x",
+            "coordinate_y",
+            "id",
+            "article_set",
+        )
 
     def create(self, validated_data):
         return MapDataBase.objects.create(**validated_data)
-
-
-class ArticleImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ArticleImage
-        fields = ("id", "images", "article")
 
 
 class CommentSerializer(serializers.ModelSerializer):

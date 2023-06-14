@@ -10,9 +10,10 @@ from PIL import Image
 from emoticons.models import Emoticon, EmoticonImage
 import tempfile
 
+
 class ReportsAPIViewTest(APITestCase):
     @classmethod
-    def setUpTestData(cls) :
+    def setUpTestData(cls):
         cls.user_data = {"username": "test2", "password": "test"}
         cls.user = User.objects.create_user("test2@test.com", "test2", "test")
         cls.writer = User.objects.create_user("test@test.com", "test", "test")
@@ -32,19 +33,17 @@ class ReportsAPIViewTest(APITestCase):
         cls.comment = Comment.objects.create(
             article=cls.article, writer=cls.writer, comment="comment test"
         )
+
     def setUp(self):
         self.access_token = self.client.post(
             reverse("token_obtain_pair"), self.user_data
         ).data["access"]
-        
+
     # 신고하기
     def test_report(self):
-        response=self.client.post(
+        response = self.client.post(
             path=reverse("report"),
-            data={
-                "request_type":"article",
-                "report_id":1
-            },
+            data={"request_type": "article", "report_id": 1},
             HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
         )
         self.assertEqual(response.status_code, 200)

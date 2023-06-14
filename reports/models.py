@@ -3,7 +3,6 @@ from users.models import CommonModel, User
 from articles.models import Article, Comment
 
 
-
 class ReportUser(CommonModel):
     """유저 신고
     db_status={1:처리 안됨,2:해결됨}
