@@ -66,15 +66,15 @@ class EmoticonSerializer(serializers.ModelSerializer):
             return None
 
     def get_price(self, emoticon):
-        price = 0
-        images = EmoticonImage.objects.filter(emoticon=emoticon)
+        file_size = 0
+        images = EmoticonImage.objects.filter(emoticon=emoticon, db_status=1)
         for a in images:
-            price += a.size
+            file_size += a.size
 
         price_table = EmoticonPrice.objects.all()
         for b in price_table:
-            if (price / 1000 >= b.emoticon_size_start) and (
-                price / 1000 < b.emoticon_size_limit
+            if (file_size / 1000 >= b.emoticon_size_start) and (
+                file_size / 1000 < b.emoticon_size_limit
             ):
                 return f"{b.price}원"
             else:
