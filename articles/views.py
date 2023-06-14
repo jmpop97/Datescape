@@ -7,13 +7,11 @@ from rest_framework.views import APIView
 from rest_framework import status, permissions
 from articles.serializers import (
     ArticleSerializer,
-    ArticleCreateSerializer,
-    ArticlePutSerializer,
     CommentSerializer,
     CommentCreateSerializer,
     CommentLikeSerizlizer,
     MapSearchSerializer,
-    NaverCreateSerializer,
+    ArticleSerializer,
 )
 from articles.models import Article, Tag, Comment, CommentLike, MapDataBase
 from dsproject import settings
@@ -33,36 +31,32 @@ NAVER_MAPS_API_GW_API_KEY_ID = settings.NAVER_MAPS_API_ID
 NAVER_MAPS_API_GW_API_KEY = settings.NAVER_MAPS_API_KEY
 
 
-class NaverMapView(APIView):
+class CommonPagination(PageNumberPagination):
+    page_size_query_param = "page_size"
+    max_page_size = 1000
+
+
+class ArticleView(APIView, PaginationHandler):
     """
     네이버지도 api사용
     게시글 작성
     """
 
+    pagination_class = CommonPagination
+
     def get(self, request):
-        # api_key = 네이버 지도 API 키값
-        search_url = "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode"
-
-        # 도로명주소 가져와서 api 요청 파라미터에 담기
-        front_accept = "제주특별자치도 서귀포시 가가로 14"
-        road_address = f"{front_accept}"
-        params = {"query": road_address}
-        headers = {
-            "X-NCP-APIGW-API-KEY-ID": NAVER_MAPS_API_GW_API_KEY_ID,
-            "X-NCP-APIGW-API-KEY": NAVER_MAPS_API_GW_API_KEY,
-        }
-
-        # api 요청 보내기
-        response = requests.get(search_url, headers=headers, params=params)
-        result = response.json()
-        address = result["addresses"][0]
-        address_info = {
-            "roadAddress": address["roadAddress"],
-            "jibunAddress": address["jibunAddress"],
-            "coordinate_x": address["x"],
-            "coordinate_y": address["y"],
-        }
-        return Response(address_info)
+        """
+        delete에서도 언급하겠지만 db_status 값이 1인 게시글들만 출력되게 작업했습니다.
+        """
+        articles = Article.objects.filter(db_status=1)
+        page = self.paginate_queryset(articles)
+        if page is not None:
+            serializer = self.get_paginated_response(
+                ArticleSerializer(page, many=True).data
+            )
+        else:
+            serializer = ArticleSerializer(articles, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
         # 검색할 지번 또는 도로명 주소
@@ -86,9 +80,6 @@ class NaverMapView(APIView):
             "coordinate_x": address["x"],
             "coordinate_y": address["y"],
         }
-        # print("======1=======")
-        # print(address_info)
-        # print("======2=======")
 
         # 게시글 정보
         title = request.data.get("title")
@@ -107,7 +98,7 @@ class NaverMapView(APIView):
                 serializer.save()
                 serializer_id = serializer.data["id"]
         # 게시글 저장
-        article_serializer = NaverCreateSerializer(
+        article_serializer = ArticleSerializer(
             data={
                 "title": title,
                 "content": content,
@@ -117,8 +108,6 @@ class NaverMapView(APIView):
             },
             context={"request": request},
         )
-        # print(serializer_id,"id")
-        # print(serializer_id, "serializer_id")
         if article_serializer.is_valid():
             article = article_serializer.save(user=request.user)
             tags = request.data.get("tags", "").split("#")
@@ -135,188 +124,6 @@ class NaverMapView(APIView):
             return Response(
                 article_serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
-
-
-class KakaoSaveView(APIView):
-    """
-    지도 db저장 뷰입니다.
-    """
-
-    def get(self, request):
-        map_data = MapDataBase.objects.all()
-        serializer = MapSearchSerializer(map_data, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        serializer = MapSearchSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class KakaoMapCoordinateView(APIView):
-    """
-    get은필요없을거같지만 참고용으로두겠습니다 최종땐 삭제해야합니다.
-    좌표검색용 뷰입니다.
-    """
-
-    def get(self, request, format=None):
-        headers = {
-            "Authorization": f"KakaoAK {REST_API_KEY}",  # REST API 키
-            "Content-Type": "application/x-www-form-urlencoded",
-            # 헤더 설정
-        }
-        # 검색할 좌표 값
-        # x, y = 126.531039, 33.499553
-        url = f"https://dapi.kakao.com/v2/local/geo/coord2address.json?x={x}&y={y}"
-        response = requests.get(url, headers=headers)
-        data = response.json()
-
-        # 주소 추출 및 반환
-        documents = data.get("documents")
-        if documents:
-            address = documents[0].get("address").get("address_name")
-            road_address = documents[0].get("road_address").get("address_name")
-            return Response({"address": address, "road_address": road_address})
-        else:
-            return Response(
-                {"error": "결과가 없습니다...니다...ㅠㅠㅠㅠㅠ"}, status=status.HTTP_204_NO_CONTENT
-            )
-
-    def post(self, request):
-        headers = {
-            "Authorization": f"KakaoAK {REST_API_KEY}",
-        }
-        x = request.data.get("x", None)
-        y = request.data.get("y", None)
-        data = {
-            "x": float(x),
-            "y": float(y),
-        }
-        url = f"https://dapi.kakao.com/v2/local/geo/coord2address.json?x={x}&y={y}"
-        response = requests.post(url, headers=headers)
-        data = response.json()
-        documents = data.get("documents")
-        if documents:
-            address = documents[0].get("address").get("address_name")
-            road_address = documents[0].get("road_address").get("address_name")
-            return Response({"address": address, "road_address": road_address})
-        else:
-            return Response(
-                {"error": "결과가 없습니다...니다...ㅠㅠㅠㅠㅠ"}, status=status.HTTP_204_NO_CONTENT
-            )
-
-
-class KakaoMapSearchView(APIView):
-    """
-    게시글 작성
-    """
-
-    def post(self, request):
-        article_serializer = ArticleCreateSerializer(
-            data=request.data, context={"request": request}
-        )
-        if article_serializer.is_valid():
-            # Kakao 지도 API를 이용하여 장소 정보 검색 후, MapSearch 모델 생성
-            headers = {
-                "Authorization": f"KakaoAK {REST_API_KEY}",
-            }
-            query = request.data.get("query", None)
-            url = f"https://dapi.kakao.com/v2/local/search/keyword.json?query={query}"
-            response = requests.get(url, headers=headers)
-            if response.status_code == 200:
-                data = response.json()
-                # print(data)
-                documents = data.get("documents")
-                # print("===111===","KakaoMapSearchView")
-                # print(documents,"documents","KakaoMapSearchView")
-                # print(documents[0],"documents[0]","KakaoMapSearchView")
-                # print("===222===","KakaoMapSearchView")
-                if documents:
-                    serializer = MapSearchSerializer(
-                        data={
-                            "jibun_address": documents[0].get("address_name"),
-                            "road_address": documents[0].get("road_address_name"),
-                            "coordinate_x": documents[0].get("x"),
-                            "coordinate_y": documents[0].get("y"),
-                        }
-                    )
-                    # print("====11====","KakaoMapSearchView")
-                    # print(data,"KakaoMapSearchView")
-                    # print("====22====","KakaoMapSearchView")
-                if serializer.is_valid():
-                    try:
-                        location_id = MapDataBase.objects.get(
-                            road_address=documents[0].get("road_address_name")
-                        ).id
-                    except:
-                        serializer.save()
-                        location_id = serializer.data["id"]
-                    article = article_serializer.save(
-                        location=location_id, user=request.user
-                    )
-                    print(location_id, "location_id")
-                    tags = request.data.get("tags", "").split("#")
-                    while True:
-                        try:
-                            tags.remove("")
-                        except:
-                            break
-                    for tag in tags:
-                        tag_obj, _ = Tag.objects.get_or_create(tag=tag)
-                        article.tags.add(tag_obj)
-                    # print(serializer.data)
-                    return Response(article_serializer.data, status=status.HTTP_200_OK)
-                else:
-                    return Response(
-                        serializer.errors, status=status.HTTP_400_BAD_REQUEST
-                    )
-            else:
-                return Response(
-                    {"error": "결과가 없습니다."}, status=status.HTTP_204_NO_CONTENT
-                )
-        else:
-            return Response(
-                article_serializer.errors, status=status.HTTP_400_BAD_REQUEST
-            )
-
-
-class CommonPagination(PageNumberPagination):
-    page_size_query_param = "page_size"
-    max_page_size = 1000
-
-
-class ArticleView(APIView, PaginationHandler):  # serializer 수정? 꾸미기?
-    pagination_class = CommonPagination
-
-    def get(self, request):
-        """
-        delete에서도 언급하겠지만 db_status 값이 1인 게시글들만 출력되게 작업했습니다.
-        """
-        articles = Article.objects.filter(db_status=1)
-        page = self.paginate_queryset(articles)
-        if page is not None:
-            serializer = self.get_paginated_response(
-                ArticleSerializer(page, many=True).data
-            )
-        else:
-            serializer = ArticleSerializer(articles, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        tags = request.data.pop("tags", [])
-        serializer = ArticleSerializer(data=request.data)
-
-        if serializer.is_valid():
-            article = serializer.save(user=request.user, location=1)
-            for tag in tags:
-                tag_obj, _ = Tag.objects.get_or_create(tag=tag)
-                article.tags.add(tag_obj)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ArticleDetailView(APIView):
@@ -336,7 +143,7 @@ class ArticleDetailView(APIView):
 
     def put(self, request, article_id):
         article = get_object_or_404(Article, id=article_id)
-        serializer = ArticlePutSerializer(article, data=request.data)
+        serializer = ArticleSerializer(article, data=request.data)
         # 작성자만 수정 가능하게!
         if request.user == article.user:
             if serializer.is_valid():

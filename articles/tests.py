@@ -3,7 +3,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from users.models import User
 from faker import Faker
-from articles.models import Article, KakaoMapDataBase, Comment, Tag
+from articles.models import Article, MapDataBase, Comment, Tag
 from articles.serializers import ArticleSerializer
 from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
 from PIL import Image
@@ -85,7 +85,7 @@ class ArticleDetailAPIViewTest(APITestCase):
         cls.user_data = {"username": "test2", "password": "test"}
         cls.articles = []
         cls.user = User.objects.create_user("test2@test.com", "test2", "test")
-        cls.locaton = KakaoMapDataBase.objects.create(
+        cls.locaton = MapDataBase.objects.create(
             jibun_address="경기 평택시 팽성읍 본정리 15-3",
             road_address="경기 평택시 팽성읍 광덕계양로 963",
             coordinate_x=127.014450917838,
@@ -146,7 +146,7 @@ class CommentAPIViewTest(APITestCase):
         cls.user_data = {"username": "test2", "password": "test"}
         cls.user = User.objects.create_user("test2@test.com", "test2", "test")
         cls.writer = User.objects.create_user("test@test.com", "test", "test")
-        cls.locaton = KakaoMapDataBase.objects.create(
+        cls.locaton = MapDataBase.objects.create(
             jibun_address="경기 평택시 팽성읍 본정리 15-3",
             road_address="경기 평택시 팽성읍 광덕계양로 963",
             coordinate_x=127.014450917838,
@@ -263,7 +263,7 @@ class LocationListAPIViewTest(APITestCase):
         cls.user_data = {"username": "test2", "password": "test"}
         cls.articles = []
         cls.user = User.objects.create_user("test2@test.com", "test2", "test")
-        cls.locaton = KakaoMapDataBase.objects.create(
+        cls.locaton = MapDataBase.objects.create(
             jibun_address="서울 구로구 구로동 435",
             road_address="서울 구로구 가마산로 245",
             coordinate_x=126.88736266588283,
@@ -324,7 +324,7 @@ class SearchAPIViewTest(APITestCase):
                 "tags": [cls.tag1.id, cls.tag3.id],
             },
         ]
-        cls.locaton = KakaoMapDataBase.objects.create(
+        cls.locaton = MapDataBase.objects.create(
             jibun_address="서울 구로구 구로동 435",
             road_address="서울 구로구 가마산로 245",
             coordinate_x=126.88736266588283,
