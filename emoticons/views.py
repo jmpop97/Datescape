@@ -312,10 +312,7 @@ class SoldEmoticonCountView(APIView):
         판매자 지급금 계산을 위한 판매량 조회
         """
         emoticon = get_object_or_404(Emoticon, id=emoticon_id)
-        sold_count = len(UserEmoticonList.objects.filter(sold_emoticon=emoticon))
-        serializer = EmoticonSerializer(
-            emoticon, context={"user": request.user, "sold_count": sold_count}
-        )
+        serializer = EmoticonSerializer(emoticon, context={"user": request.user})
         if (emoticon.db_status == 1) or (emoticon.db_status == 2):
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:

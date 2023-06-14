@@ -59,11 +59,9 @@ class EmoticonSerializer(serializers.ModelSerializer):
             return None
 
     def get_sold_count(self, emoticon):
-        if self.context.get("sold_count"):
-            sold_count = self.context.get("sold_count")
-            return sold_count
-        else:
-            return None
+        sold_emoticons = UserEmoticonList.objects.filter(sold_emoticon=emoticon)
+        sold_count = UserEmoticonListSerializer(sold_emoticons, many=True)
+        return sold_count.data
 
     def get_price(self, emoticon):
         file_size = 0
@@ -76,7 +74,7 @@ class EmoticonSerializer(serializers.ModelSerializer):
             if (file_size / 1000 >= b.emoticon_size_start) and (
                 file_size / 1000 < b.emoticon_size_limit
             ):
-                return f"{b.price}원"
+                return {b.price}
             else:
                 pass
 
