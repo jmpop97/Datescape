@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 
 from users.models import User
+from reports.models import ParentCategory, ChildCategory
 from reports.serializers import (
     ReportUserSerializer,
     ReportArticleSerializer,
@@ -80,3 +81,23 @@ class ReportView(APIView):
             request_type, self.request_dic["fail"]
         )(self, request)
         return Response(message_is, status=status_is)
+
+
+class CategoryView(APIView):
+    def search(self, id, count):
+        """full category"""
+        childs = ChildCategory.objects.filter(parent_category=id).order_by("riority")
+        print(childs)
+
+        list_id = []
+        for child in childs:
+            if child.down_list_num:
+                if count != 1:
+                    list_id += [self.search(child.down_list_num, count - 1)]
+            list_id += child.category.name
+        return list_id
+
+    def get(self, requst):
+        list_id = self.search(1, 5)
+        print(list_id)
+        return Response(list_id, status=status.HTTP_200_OK)
