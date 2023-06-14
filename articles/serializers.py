@@ -25,16 +25,17 @@ class ArticleImageSerializer(serializers.ModelSerializer):
 
 
 class ArticleSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source="user.id")
+    user = serializers.ReadOnlyField(source="user.username")
+    # username = serializers.SerializerMethodField()
     tags = TagSerializer(many=True, read_only=True)
     jibun_address = serializers.SerializerMethodField()
     road_address = serializers.SerializerMethodField()
     coordinate_x = serializers.SerializerMethodField()
     coordinate_y = serializers.SerializerMethodField()
-    image = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()  # 조회 이미지 리스트
     images = serializers.ListSerializer(
         child=serializers.ImageField(), required=False, write_only=True
-    )
+    )  # 게시글 저장할때 이미지
     # 위에서 아래로 변경된 부분 : ListSerializer와 serializers.ImageField
 
     class Meta:
@@ -46,6 +47,7 @@ class ArticleSerializer(serializers.ModelSerializer):
             "content",
             "images",
             "image",
+            "main_image",
             "score",
             "tags",
             "jibun_address",
@@ -56,8 +58,11 @@ class ArticleSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
-        # 위에서 변경된 부분 : getlist() 메서드를 사용해서 여러 개의 이미지 파일 처리
-        # 게시글 저장
+        """
+        위에서 변경된 부분 : getlist() 메서드를 사용해서 여러 개의 이미지 파일 처리
+        게시글 저장
+        images사용
+        """
         article = Article.objects.create(**validated_data)
         # 이미지 저장
         images_data = self.context.get("images", None)
@@ -67,8 +72,11 @@ class ArticleSerializer(serializers.ModelSerializer):
         return article
 
     def get_image(self, obj):
+        """
+        조회이미지리스트 보여주기
+        """
         try:
-            article_images = obj.articleimage_set.all()
+            article_images = obj.article_images.all()
             image_urls = [article_image.image.url for article_image in article_images]
         except AttributeError:
             image_urls = None

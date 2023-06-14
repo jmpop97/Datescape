@@ -84,6 +84,7 @@ class ArticleView(APIView, PaginationHandler):
         title = request.data.get("title")
         content = request.data.get("content")
         score = request.data.get("score")
+        main_image = request.data.get("main_image")
 
         # MapSearch 모델 저장
         serializer = MapSearchSerializer(data=address_info)
@@ -96,15 +97,18 @@ class ArticleView(APIView, PaginationHandler):
                 serializer.save()
                 serializer_id = serializer.data["id"]
         # 게시글 저장
+        print(request.data.getlist("images"))
         article_serializer = ArticleSerializer(
             data={
                 "title": title,
                 "content": content,
                 "score": score,
                 "location": serializer_id,
+                "main_image": main_image,
             },
             context={"images": request.data.getlist("images")},
         )
+        print(main_image)
         if article_serializer.is_valid():
             article = article_serializer.save(user=request.user)
             tags = request.data.get("tags", "").split("#")
@@ -139,6 +143,10 @@ class ArticleDetailView(APIView):
             return Response("삭제된 글입니다.", status=status.HTTP_404_NOT_FOUND)
 
     def put(self, request, article_id):
+        """
+        게시글 수정부분입니다.
+        location 값이 int로 들어가는데 실제로 수정할 땐 주소로 수정 가능하게 해야 합니다.
+        """
         article = get_object_or_404(Article, id=article_id)
         serializer = ArticleSerializer(article, data=request.data)
         # 작성자만 수정 가능하게!
