@@ -1,3 +1,4 @@
+from typing import Iterable, Optional
 from django.db import models
 from users.models import CommonModel, User
 from articles.models import Article, Comment
