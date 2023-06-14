@@ -45,7 +45,7 @@ class Article(CommonModel):
         max_length=256,
     )
     content = models.TextField()
-    images = models.ImageField(null=True, blank=True)
+    image = models.ImageField(null=True, blank=True)
     score = models.FloatField(
         null=True,
         blank=True,
