@@ -11,7 +11,6 @@ from articles.serializers import (
     CommentCreateSerializer,
     CommentLikeSerizlizer,
     MapSearchSerializer,
-    ArticleSerializer,
 )
 from articles.models import Article, Tag, Comment, CommentLike, MapDataBase
 from dsproject import settings
@@ -234,6 +233,7 @@ class ArticleSearchView(generics.ListAPIView):
                     .distinct()
                     .order_by("-created_at")
                 )
+                print(queryset)
             return queryset
         # 태그 검색
         else:
