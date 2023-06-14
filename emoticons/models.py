@@ -48,7 +48,7 @@ class EmoticonImage(CommonModel):
     """
     이모티콘 이미지 모델입니다.
     하나의 이모티콘 객체에 다중 이미지를 구현하기 위해 사용자가 업로드 한 이미지를 이모티콘 객체에 연결합니다.
-    각각의 EmoticonImage객체는 연결되는 이모티콘을 의미하는 emoticon필드, 업로드 한 이미지파일 필드, 크리를 의미하는 size필드로 구성됩니다.
+    각각의 EmoticonImage객체는 연결되는 이모티콘을 의미하는 emoticon필드, 업로드 한 이미지파일 필드, 파일용량을 의미하는 size필드로 구성됩니다.
     """
 
     emoticon = models.ForeignKey(
