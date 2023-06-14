@@ -56,12 +56,11 @@ class ArticleSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
-        images_data = self.context.get("request").FILES.getlist("images")
-        print(validated_data, "벨리~")
-        # print(images_data)
-        # print("===========images_data============")
         # 위에서 변경된 부분 : getlist() 메서드를 사용해서 여러 개의 이미지 파일 처리
+        # 게시글 저장
         article = Article.objects.create(**validated_data)
+        # 이미지 저장
+        images_data = self.context.get("images", None)
         for image_data in images_data:
             ArticleImage.objects.create(article=article, image=image_data)
             # 위에서 변경된 부분 : images -> image

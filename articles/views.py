@@ -71,7 +71,6 @@ class ArticleView(APIView, PaginationHandler):
         search_url = "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode"
         response = requests.get(search_url, headers=headers, params=params)
         result = response.json()
-
         # 검색 결과에서 주소 정보 추출
         address = result["addresses"][0]
         address_info = {
@@ -85,7 +84,6 @@ class ArticleView(APIView, PaginationHandler):
         title = request.data.get("title")
         content = request.data.get("content")
         score = request.data.get("score")
-        image = request.data.get("image")
 
         # MapSearch 모델 저장
         serializer = MapSearchSerializer(data=address_info)
@@ -103,10 +101,9 @@ class ArticleView(APIView, PaginationHandler):
                 "title": title,
                 "content": content,
                 "score": score,
-                "image": image,
                 "location": serializer_id,
             },
-            context={"request": request},
+            context={"images": request.data.getlist("images")},
         )
         if article_serializer.is_valid():
             article = article_serializer.save(user=request.user)
