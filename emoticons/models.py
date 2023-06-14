@@ -48,7 +48,7 @@ class EmoticonImage(CommonModel):
     """
     이모티콘 이미지 모델입니다.
     하나의 이모티콘 객체에 다중 이미지를 구현하기 위해 사용자가 업로드 한 이미지를 이모티콘 객체에 연결합니다.
-    각각의 EmoticonImage객체는 연결되는 이모티콘을 의미하는 emoticon필드, 업로드 한 이미지파일 필드로 구성됩니다.
+    각각의 EmoticonImage객체는 연결되는 이모티콘을 의미하는 emoticon필드, 업로드 한 이미지파일 필드, 크리를 의미하는 size필드로 구성됩니다.
     """
 
     emoticon = models.ForeignKey(
@@ -57,6 +57,7 @@ class EmoticonImage(CommonModel):
     image = models.ImageField(
         "이미지", upload_to="%Y/%m/", blank=True, default=None
     )  # 필수로 받을지?
+    size = models.IntegerField("이미지 용량", default=0)
 
     def __str__(self):
         return f"{self.emoticon.title} - {self.image}"
@@ -79,3 +80,20 @@ class UserEmoticonList(CommonModel):
 
     def __str__(self):
         return f"이모티콘: {self.sold_emoticon} - 사용자: {self.buyer}"
+
+
+class EmoticonPrice(CommonModel):
+    """
+    이모티콘 가격 책정 모델입니다.
+
+    독립적인 모델로 이모티콘의 총 용량에 해당하는 가격을 설정하여 저장합니다.
+        - 이모티콘에 연결돼있는 이모티콘 이미지 용량들의 총 합을 계산합니다.
+        - 이모티콘의 총 용량 속하는 제한값의 가격을 프론트로 보내줍니다.
+    """
+
+    emoticon_size_start = models.IntegerField("이미지 총 용량 시작 값(KB) / 이상", default=0)
+    emoticon_size_limit = models.IntegerField("이미지 총 용량 제한 값(KB) / 미만", default=0)
+    price = models.IntegerField("가격", default=0)
+
+    def __str__(self):
+        return f"용량 범위: {self.emoticon_size_start}KB({self.emoticon_size_start/1000}MB)~{self.emoticon_size_limit}KB({self.emoticon_size_limit/1000}MB) / 가격: {self.price}"

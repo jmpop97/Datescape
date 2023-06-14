@@ -48,7 +48,11 @@ class EmoticonView(APIView):
         """
         if "images" in request.data:
             serializer = EmoticonCreateSerializer(
-                data=request.data, context={"images": request.data.getlist("images")}
+                data=request.data,
+                context={
+                    "images": request.data.getlist("images"),
+                    "file_size": request.data.getlist("file_size"),
+                },
             )
         else:
             serializer = EmoticonCreateSerializer(data=request.data)

@@ -394,3 +394,17 @@ class CommentLikeView(APIView):
                 {"message": "좋아요!", "comment_likes": comment_likes},
                 status=status.HTTP_200_OK,
             )
+
+
+class UserCommentView(APIView):
+    """
+    유저 마이페이지 - 작성한 댓글 보기
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """작성한 댓글 가져오기"""
+        comments = Comment.objects.filter(writer=request.user, db_status=1)
+        serializer = CommentSerializer(comments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
