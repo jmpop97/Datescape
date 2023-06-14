@@ -2,7 +2,6 @@ from django.db import models
 from users.models import CommonModel, User
 from articles.models import Article, Comment
 
-# Create your models here.
 
 
 class ReportUser(CommonModel):

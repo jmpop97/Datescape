@@ -12,7 +12,6 @@ from reports.serializers import (
 )
 
 
-# Create your views here.
 class ReportView(APIView):
     """신고 접수
     input
