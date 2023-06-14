@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from emoticons.models import Emoticon, EmoticonImage, UserEmoticonList
+from emoticons.models import Emoticon, EmoticonImage, UserEmoticonList, EmoticonPrice
 
 
 class EmoticonImageSerializer(serializers.ModelSerializer):
@@ -23,6 +23,7 @@ class EmoticonSerializer(serializers.ModelSerializer):
     req_username = serializers.SerializerMethodField()
     req_user_email = serializers.SerializerMethodField()
     sold_count = serializers.SerializerMethodField()
+    price = serializers.SerializerMethodField()
 
     def get_images(self, emoticon):
         qs = EmoticonImage.objects.filter(db_status=1, emoticon=emoticon)
@@ -64,6 +65,21 @@ class EmoticonSerializer(serializers.ModelSerializer):
         else:
             return None
 
+    def get_price(self, emoticon):
+        price = 0
+        images = EmoticonImage.objects.filter(emoticon=emoticon)
+        for a in images:
+            price += a.size
+
+        price_table = EmoticonPrice.objects.all()
+        for b in price_table:
+            if (price / 1000 >= b.emoticon_size_start) and (
+                price / 1000 < b.emoticon_size_limit
+            ):
+                return f"{b.price}원"
+            else:
+                pass
+
     class Meta:
         model = Emoticon
         fields = "__all__"
@@ -80,10 +96,19 @@ class EmoticonCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         images_data = self.context.get("images", None)
+        images_file_size = self.context.get("file_size", None)
         emoticon = super().create(validated_data)
         if images_data:
-            for image_data in images_data:
-                EmoticonImage.objects.create(emoticon=emoticon, image=image_data)
+            for i, image_data in enumerate(images_data):
+                # EmoticonImage.objects.create(emoticon=emoticon, image=image_data, size=images_file_size[i])
+
+                if images_file_size == []:
+                    EmoticonImage.objects.create(emoticon=emoticon, image=image_data)
+                else:
+                    EmoticonImage.objects.create(
+                        emoticon=emoticon, image=image_data, size=images_file_size[i]
+                    )
+
         return emoticon
 
 
