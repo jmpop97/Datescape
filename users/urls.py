@@ -11,9 +11,12 @@ urlpatterns = [
     ),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("sign-up/", views.UserView.as_view(), name="signup"),
+    # admin유저만
     path("userlist/", views.UserListView.as_view(), name="userlist"),
+    # 로그인한 본인 프로필정보
     path("profile/", views.ProfileView.as_view(), name="profile"),
-    path("<pk>/", views.UserDetailView.as_view(), name="userprofile"),
+    # 타인 유저 프로필
+    path("<pk>/profile/", views.UserDetailView.as_view(), name="userprofile"),
     path("mock/", views.mockView.as_view()),
     # path('/activate/<str:uidb64>/<str:token>', views.Activate.as_view()),
     path("social/", views.SocialUrlView.as_view(), name="social_login"),
