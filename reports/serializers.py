@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from reports.models import ReportUser, ReportArticle, ReportComment
+from reports.models import ReportUser, ReportArticle, ReportComment, ChildCategory
 from users.models import User
 from articles.models import Article, Comment
 
@@ -65,3 +65,9 @@ class ReportCommentSerializer(serializers.ModelSerializer):
         )
         validated_data["reporter"] = User.objects.get(id=validated_data["reporter"])
         return super().create(validated_data)
+
+
+class ChildCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChildCategory
+        fields = "__all__"

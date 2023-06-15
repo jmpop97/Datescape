@@ -1,5 +1,5 @@
 from django.contrib import admin
-from emoticons.models import Emoticon, EmoticonImage, UserEmoticonList
+from emoticons.models import Emoticon, EmoticonImage, UserEmoticonList, EmoticonPrice
 from users.admin import CommonModelAdmin
 
 
@@ -19,6 +19,12 @@ class UserEmoticonListAdmin(CommonModelAdmin):
     list_display = ("buyer", "sold_emoticon")
 
 
+class EmoticonPriceAdmin(CommonModelAdmin):
+    fields = ("price", "emoticon_size_start", "emoticon_size_limit")
+    list_display = ("price", "emoticon_size_start", "emoticon_size_limit")
+
+
 admin.site.register(Emoticon, EmoticonAdmin)
 admin.site.register(EmoticonImage, EmoticonImageAdmin)
 admin.site.register(UserEmoticonList, UserEmoticonListAdmin)
+admin.site.register(EmoticonPrice, EmoticonPriceAdmin)
