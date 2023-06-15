@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models import Avg
 from articles.models import (
     Article,
     ArticleImage,
@@ -107,6 +108,11 @@ class MapSearchSerializer(serializers.ModelSerializer):
     """지도정보 db저장"""
 
     article_set = ArticleSerializer(many=True, read_only=True)
+    score_avg = serializers.SerializerMethodField()
+
+    def get_score_avg(self, obj):
+        avg = obj.article_set.aggregate(Avg("score"))
+        return avg["score__avg"]
 
     class Meta:
         model = MapDataBase
@@ -117,6 +123,7 @@ class MapSearchSerializer(serializers.ModelSerializer):
             "coordinate_y",
             "id",
             "article_set",
+            "score_avg",
         )
 
     def create(self, validated_data):
