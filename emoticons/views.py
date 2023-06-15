@@ -87,7 +87,10 @@ class EmoticonView(APIView):
                 serializer = EmoticonSerializer(
                     emoticon,
                     data=request.data,
-                    context={"images": request.data.getlist("images")},
+                    context={
+                        "images": request.data.getlist("images"),
+                        "file_size": request.data.getlist("file_size"),
+                    },
                 )
             else:
                 serializer = EmoticonSerializer(emoticon, data=request.data)
@@ -103,10 +106,11 @@ class EmoticonView(APIView):
 
                 # 이미지 업로드시 생성, 이모티콘에 추가
                 images_data = serializer.context.get("images", None)
+                file_size_data = serializer.context.get("file_size", None)
                 if images_data:
-                    for image_data in images_data:
+                    for i, image_data in enumerate(images_data):
                         EmoticonImage.objects.create(
-                            emoticon=emoticon, image=image_data
+                            emoticon=emoticon, image=image_data, size=file_size_data[i]
                         )
 
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -308,10 +312,7 @@ class SoldEmoticonCountView(APIView):
         판매자 지급금 계산을 위한 판매량 조회
         """
         emoticon = get_object_or_404(Emoticon, id=emoticon_id)
-        sold_count = len(UserEmoticonList.objects.filter(sold_emoticon=emoticon))
-        serializer = EmoticonSerializer(
-            emoticon, context={"user": request.user, "sold_count": sold_count}
-        )
+        serializer = EmoticonSerializer(emoticon, context={"user": request.user})
         if (emoticon.db_status == 1) or (emoticon.db_status == 2):
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
