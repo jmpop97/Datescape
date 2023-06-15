@@ -109,10 +109,10 @@ class MapSearchSerializer(serializers.ModelSerializer):
 
     article_set = ArticleSerializer(many=True, read_only=True)
     score_avg = serializers.SerializerMethodField()
-    
+
     def get_score_avg(self, obj):
-        avg = obj.article_set.aggregate(Avg('score'))
-        return avg['score__avg']
+        avg = obj.article_set.aggregate(Avg("score"))
+        return avg["score__avg"]
 
     class Meta:
         model = MapDataBase
@@ -123,7 +123,7 @@ class MapSearchSerializer(serializers.ModelSerializer):
             "coordinate_y",
             "id",
             "article_set",
-            "score_avg"
+            "score_avg",
         )
 
     def create(self, validated_data):
