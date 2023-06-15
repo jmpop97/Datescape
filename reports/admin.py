@@ -1,5 +1,12 @@
 from django.contrib import admin
-from reports.models import ReportUser, ReportArticle, ReportComment
+from reports.models import (
+    ReportUser,
+    ReportArticle,
+    ReportComment,
+    CategoryName,
+    ChildCategory,
+    ParentCategory,
+)
 from users.admin import CommonModelAdmin
 
 
@@ -22,6 +29,17 @@ class ReportCommentAdmin(CommonModelAdmin):
     readonly_fields = ("reporter", "report_comment")
 
 
+class ChildCategoryAdmin(CommonModelAdmin):
+    fields = ("parent_category", "category", "down_list_num", "riority")
+    list_display = ("parent_category", "riority", "category", "down_list_num")
+    readonly_fields = ("parent_category", "category")
+    list_filter = ["parent_category"]
+    ordering = ["parent_category", "riority"]
+
+
 admin.site.register(ReportUser, ReportUserAdmin)
 admin.site.register(ReportArticle, ReportArticleAdmin)
 admin.site.register(ReportComment, ReportCommentAdmin)
+admin.site.register(CategoryName)
+admin.site.register(ChildCategory, ChildCategoryAdmin)
+admin.site.register(ParentCategory)
