@@ -3,8 +3,13 @@ from django.conf import settings
 from django.shortcuts import redirect
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.generics import get_object_or_404
 from rest_framework import status
-from .serializers import CustomTokenObtainPairSerializer, UserSerializer
+from .serializers import (
+    CustomTokenObtainPairSerializer,
+    UserSerializer,
+    UserDetailSerializer,
+)
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import permissions
@@ -32,7 +37,7 @@ REDIRECT_URI = getattr(settings, "REDIRECT_URI")
 # REDIRECT_URI = "http://127.0.0.1:5500/"
 # print(GITHUB_API_KEY)
 # print(GITHUB_SECRET_CODE)
-# print(REDIRECT_URI)
+print(REDIRECT_URI)
 
 
 class UserView(APIView):
@@ -56,10 +61,60 @@ class mockView(APIView):
 
     def get(self, request):
         print("로그인된 유저")
-        print(request)
+        print(type(request.user.id))
+        print(request.user.pk)
         return Response(
-            {"로그인된 유저이름 /// " + f"{request.user}"}, status=status.HTTP_200_OK
+            {"로그인된 유저이름 /// " + f"{request.user.email}"}, status=status.HTTP_200_OK
         )
+
+
+class UserListView(APIView):
+    """
+    admin관리자만 볼수있음
+    """
+
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        user = User.objects.all()
+        serializer = UserSerializer(user, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UserDetailView(APIView):
+    """
+    input: user의 pk
+    output: email, username, profileimage
+
+    추가구현필요기능-follow,following,bookmark,gpsmap
+    연동필요-mycomment, myarticle, ??
+    """
+
+    def get(self, request, pk):
+        user = get_object_or_404(User, id=pk)
+        serializer = UserDetailSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ProfileView(APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get(self, request):
+        print("내 정보")
+        user = request.user
+        if user:
+            serializer = UserSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(
+            {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def put(self, request):
+        print("내 정보 수정하기")
+        print(request.user.username)
+        user = request.user
+        if user:
+            return Response("내 프로필 정보 수정하기")
 
 
 class SocialUrlView(APIView):
@@ -322,3 +377,101 @@ class NaverLoginView(APIView):
 class GithubLoginView(APIView):
     def post(self, request):
         pass
+
+
+class GithubLoginView(APIView):
+    def post(self, request):
+        print("github 소셜 인가코드 받아서 유저 데이터 저장")
+        client_id = GITHUB_API_KEY
+        client_secret = GITHUB_SECRET_CODE
+        code = request.data.get("code")
+        redirect_uri = REDIRECT_URI
+        # print(code)
+        # print(state)
+        token_url = f"https://github.com/login/oauth/access_token"
+        token_request = requests.post(
+            token_url,
+            data={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "code": code,
+                "redirect_uri": redirect_uri,
+            },
+            headers={
+                "Accept": "application/json",
+            },
+        )
+        access_token = token_request.json().get("access_token")
+        user_data_request = requests.get(
+            "https://api.github.com/user",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+            },
+        )
+        user_datajson = user_data_request.json()
+        print(user_datajson)
+        user_url = "https://api.github.com/user"
+        user_email_url = "https://api.github.com/user/emails"
+
+        response = requests.get(
+            user_url,
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Accept": "application/json",
+            },
+        )
+
+        user_data = response.json()
+        user_emails = response.json()
+
+        user_email = None
+
+        for email_data in user_emails:
+            if email_data.get("primary") and email_data.get("verified"):
+                user_email = email_data.get("email")
+
+        email = user_data.get("email")
+        username = user_data.get("nickname")
+        profileimage = user_data.get("profile_image")
+        print(email)
+        print(username)
+        print(profileimage)
+
+        try:
+            user = User.objects.get(email=email)
+            if user.login_type == "normal":
+                return Response(
+                    {"error": "소셜로그인 가입이메일이아닙니다"}, status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                refresh = RefreshToken.for_user(user)
+                refresh["email"] = user.email
+                refresh["username"] = user.username
+                refresh["login_type"] = user.login_type
+                return Response(
+                    {
+                        "refresh": str(refresh),
+                        "access": str(refresh.access_token),
+                    },
+                    status=status.HTTP_200_OK,
+                )
+        except:
+            user = User.objects.create_user(
+                email=email,
+                username=username,
+                profileimage=profileimage,
+                login_type="github",
+            )
+            user.set_unusable_password()
+            user.save()
+            refresh = RefreshToken.for_user(user)
+            refresh["email"] = user.email
+            refresh["username"] = user.username
+            refresh["login_type"] = user.login_type
+            return Response(
+                {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                },
+                status=status.HTTP_200_OK,
+            )
