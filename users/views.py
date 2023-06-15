@@ -9,6 +9,8 @@ from .serializers import (
     CustomTokenObtainPairSerializer,
     UserSerializer,
     UserDetailSerializer,
+    ProfileEditSerializer,
+    PasswordEditSerializer,
 )
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -60,9 +62,9 @@ class mockView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        print("로그인된 유저")
-        print(type(request.user.id))
-        print(request.user.pk)
+        # print("로그인된 유저")
+        # print(type(request.user.id))
+        # print(request.user.pk)
         return Response(
             {"로그인된 유저이름 /// " + f"{request.user.email}"}, status=status.HTTP_200_OK
         )
@@ -98,9 +100,8 @@ class UserDetailView(APIView):
 
 class ProfileView(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
     def get(self, request):
-        print("내 정보")
+        # print("내 정보")
         user = request.user
         if user:
             serializer = UserSerializer(user)
@@ -109,21 +110,37 @@ class ProfileView(APIView):
             {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
         )
 
-    def patch(self, request):
-        print("내 정보 수정하기")
+    def put(self, request):
+        # print("내 정보 수정하기")
         user = request.user
         print(user)
-        profile = User.objects.get(user=user)
-        print(profile)
-        # serializer = UserSerializer(data=request.data)
-        # if serializer.is_valid():
-        #     serializer.save()
-        return Response({"message": "내 정보 수정하기"}, status=status.HTTP_201_CREATED)
-        # else:
-        #     return Response(
-        #         {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
-        #     )
+        serializer = ProfileEditSerializer(user, data=request.data)
+        print(request.data)
+        if serializer.is_valid():
+            serializer.save()
+            # print("정보수정")
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            # print("정보수정false")
+            return Response(
+                {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
+class PasswordChangeView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    def post(self, request):
+        # print("비밀번호 변경하기")
+        user = request.user
+        # print(user)
+        serializer = PasswordEditSerializer(user, data=request.data)
+        # print(request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(("비밀번호 변경하기 성공"), status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 class SocialUrlView(APIView):
     def post(self, request):
@@ -197,7 +214,7 @@ class KakaoLoginView(APIView):
         user_datajson = user_data_request.json()
         user_data = user_datajson.get("kakao_account").get("profile")
         # print("user_data 딕셔너리 타입")
-        print(user_data)
+        # print(user_data)
         email = user_datajson.get("kakao_account").get("email")
         username = user_data.get("nickname")
         image = user_data.get("thumbnail_image_url", None)
@@ -232,8 +249,8 @@ class KakaoLoginView(APIView):
             # user.profileimage = image
             user.set_unusable_password()
             user.save()
-            print("프로필이미지")
-            print(user.profileimage)
+            # print("프로필이미지")
+            # print(user.profileimage)
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
             refresh["username"] = user.username
@@ -257,15 +274,15 @@ class GoogleLoginView(APIView):
             "https://www.googleapis.com/oauth2/v2/userinfo", headers=headers
         )
         user_data = user_data_request.json()
-        print("user_data 딕셔너리 타입")
-        print(user_data)
+        # print("user_data 딕셔너리 타입")
+        # print(user_data)
 
         email = user_data.get("email")
         username = user_data.get("name")
         image = user_data.get("picture", None)
         # print(email)
         # print(username)
-        print(image)
+        # print(image)
         try:
             user = User.objects.get(email=email)
             if user.login_type == "normal":
@@ -293,8 +310,8 @@ class GoogleLoginView(APIView):
             )
             user.set_unusable_password()
             user.save()
-            print("프로필이미지")
-            print(user)
+            # print("프로필이미지")
+            # print(user)
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
             refresh["username"] = user.username
@@ -310,7 +327,7 @@ class GoogleLoginView(APIView):
 
 class NaverLoginView(APIView):
     def post(self, request):
-        print("naver 소셜 인가코드 받아서 유저 데이터 저장")
+        # print("naver 소셜 인가코드 받아서 유저 데이터 저장")
         client_id = NAVER_API_KEY
         client_secret = NAVER_SECRET_CODE
         code = request.data.get("code")
@@ -340,13 +357,13 @@ class NaverLoginView(APIView):
         user_datajson = user_data_request.json()
         user_data = user_datajson.get("response")
         # # print("user_data 딕셔너리 타입")
-        print(user_data)
+        # print(user_data)
         email = user_data.get("email")
         username = user_data.get("nickname")
-        profileimage = user_data.get("profile_image")
+        image = user_data.get("profile_image")
         # print(email)
         # print(username)
-        # print(profileimage)
+        # print(image)
         try:
             user = User.objects.get(email=email)
             if user.login_type == "normal":
@@ -369,7 +386,7 @@ class NaverLoginView(APIView):
             user = User.objects.create_user(
                 email=email,
                 username=username,
-                profileimage=profileimage,
+                profileimageurl=image,
                 login_type="naver",
             )
             user.set_unusable_password()
@@ -389,12 +406,7 @@ class NaverLoginView(APIView):
 
 class GithubLoginView(APIView):
     def post(self, request):
-        pass
-
-
-class GithubLoginView(APIView):
-    def post(self, request):
-        print("github 소셜 인가코드 받아서 유저 데이터 저장")
+        # print("github 소셜 인가코드 받아서 유저 데이터 저장")
         client_id = GITHUB_API_KEY
         client_secret = GITHUB_SECRET_CODE
         code = request.data.get("code")
@@ -445,10 +457,10 @@ class GithubLoginView(APIView):
 
         email = user_data.get("email")
         username = user_data.get("nickname")
-        profileimage = user_data.get("profile_image")
-        print(email)
-        print(username)
-        print(profileimage)
+        image = user_data.get("profile_image")
+        # print(email)
+        # print(username)
+        # print(image)
 
         try:
             user = User.objects.get(email=email)
@@ -472,7 +484,7 @@ class GithubLoginView(APIView):
             user = User.objects.create_user(
                 email=email,
                 username=username,
-                profileimage=profileimage,
+                profileimageurl=image,
                 login_type="github",
             )
             user.set_unusable_password()
