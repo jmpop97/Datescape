@@ -52,3 +52,33 @@ class ReportComment(CommonModel):
         Comment, on_delete=models.CASCADE, related_name="reported"
     )
     comment = models.TextField(default="", blank=True)
+
+
+class CategoryName(CommonModel):
+    name = models.TextField(default="", blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class ParentCategory(CommonModel):
+    name = models.ForeignKey(
+        CategoryName, on_delete=models.SET_NULL, null=True, related_name="parentname"
+    )
+
+    def __str__(self):
+        return str(self.id) + " - " + self.name.name
+
+
+class ChildCategory(CommonModel):
+    parent_category = models.ForeignKey(
+        ParentCategory, on_delete=models.CASCADE, null=True, related_name="childname"
+    )
+    category = models.ForeignKey(
+        CategoryName, on_delete=models.SET_NULL, null=True, related_name="list"
+    )
+    down_list_num = models.IntegerField(default=0)
+    riority = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.category.name
