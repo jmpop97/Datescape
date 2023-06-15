@@ -69,47 +69,48 @@ class CategoryView(APIView):
         return [id, name, list_id]
 
     def get(self, requst):
-        request_id = requst.data.get("id", "")
+        request_id = requst.data.get("id", 5)
+        limits = requst.data.get("limits", 5)
         try:
             main = ParentCategory.objects.get(id=request_id)
-            list_id = self.search(1, str(main.name), 2)
+            list_id = self.search(request_id, str(main.name), limits)
             return Response(list_id, status=status.HTTP_200_OK)
         except:
             return Response({"message": "fail"}, status=status.HTTP_400_BAD_REQUEST)
 
     def post(self, requst):
         """0:추가
-        양수:수정"""
-        del_ps = requst.data.get("del_ps", [])
-        del_cs = requst.data.get("del_cs", [])
-        fix_parent = requst.data.get("fix_parent", [])
-        fix_child = requst.data.get("fix_child", [])
+        양수:수정
+        [부모삭제목록,자식삭제목록,부모수정,자식수정]
+        """
+        request_datas = requst.data.get("request_datas", [])
+        print("check", request_datas)
+        for del_ps, del_cs, fix_parent, fix_child in request_datas:
+            ParentCategory.objects.filter(id__in=del_ps).delete()
+            ChildCategory.objects.filter(id__in=del_cs).delete()
 
-        ParentCategory.objects.filter(id__in=del_ps).delete()
-        ChildCategory.objects.filter(id__in=del_cs).delete()
+            for fix_id, fix_string in fix_parent:
+                _obj, _ = CategoryName.objects.get_or_create(name=fix_string)
+                if fix_id > 0:
+                    fix_p = ParentCategory.objects.get(id=fix_id)
+                else:
+                    fix_p = ParentCategory()
+                fix_p.name = _obj
+                fix_p.save()
+                print(fix_p.id)
+            for i, [fix_id, fix_string] in enumerate(fix_child):
+                _obj, _ = CategoryName.objects.get_or_create(name=fix_string)
+                print("objg", _obj.id)
+                if fix_id > 0:
+                    fix_c = ChildCategory.objects.get(id=fix_id)
+                else:
+                    fix_c = ChildCategory()
+                fix_c.parent_category = fix_p
+                fix_c.category = _obj
+                fix_c.riority = i
+                fix_c.save()
 
-        for fix_id, fix_string in fix_parent:
-            _obj, _ = CategoryName.objects.get_or_create(name=fix_string)
-            if fix_id > 0:
-                fix_p = ParentCategory.objects.get(id=fix_id)
-            else:
-                fix_p = ParentCategory()
-            fix_p.name = _obj
-            fix_p.save()
-            print(fix_p.id)
-        for i, [fix_id, fix_string] in enumerate(fix_child):
-            _obj, _ = CategoryName.objects.get_or_create(name=fix_string)
-            print("objg", _obj.id)
-            if fix_id > 0:
-                fix_c = ChildCategory.objects.get(id=fix_id)
-            else:
-                fix_c = ChildCategory()
-            fix_c.parent_category = fix_p
-            fix_c.category = _obj
-            fix_c.riority = i
-            fix_c.save()
-
-        return Response({"message": "성공"}, status=status.HTTP_200_OK)
+            return Response({"message": "성공"}, status=status.HTTP_200_OK)
 
 
 class ChildCategoryView(APIView):
@@ -123,3 +124,13 @@ class ChildCategoryView(APIView):
             list = ChildCategory.objects.all()
         lists = ChildCategorySerializer(list, many=True)
         return Response(lists.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        match_data = request.data.get("match_data", [])
+        print(match_data)
+        for parent_id, fix_id in match_data:
+            fix_c = ChildCategory.objects.get(id=fix_id)
+            fix_c.down_list_num = parent_id
+            fix_c.save()
+            print(fix_c)
+        return Response({"message": "good"}, status=status.HTTP_200_OK)
