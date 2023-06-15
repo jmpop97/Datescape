@@ -86,6 +86,7 @@ class UserAdmin(BaseUserAdmin):
         "email",
         "username",
         "profileimage",
+        "profileimageurl",
         "login_type",
         "is_admin",
         "last_login",
@@ -93,7 +94,10 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ["is_admin"]
     fieldsets = [
         (None, {"fields": ["email", "password"]}),
-        ("Personal info", {"fields": ["username", "profileimage", "login_type"]}),
+        (
+            "Personal info",
+            {"fields": ["username", "profileimage", "profileimageurl", "login_type"]},
+        ),
         ("Permissions", {"fields": ["is_admin", "last_login"]}),
     ]
     # add_fieldsets is not a standard ModelAdmin attribute. UserAdmin
@@ -108,7 +112,7 @@ class UserAdmin(BaseUserAdmin):
         ),
     ]
     search_fields = ["username"]
-    ordering = ["username"]
+    ordering = ["id"]
     filter_horizontal = []
 
 

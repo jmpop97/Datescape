@@ -37,7 +37,7 @@ REDIRECT_URI = getattr(settings, "REDIRECT_URI")
 # REDIRECT_URI = "http://127.0.0.1:5500/"
 # print(GITHUB_API_KEY)
 # print(GITHUB_SECRET_CODE)
-print(REDIRECT_URI)
+# print(REDIRECT_URI)
 
 
 class UserView(APIView):
@@ -109,12 +109,20 @@ class ProfileView(APIView):
             {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
         )
 
-    def put(self, request):
+    def patch(self, request):
         print("내 정보 수정하기")
-        print(request.user.username)
         user = request.user
-        if user:
-            return Response("내 프로필 정보 수정하기")
+        print(user)
+        profile = User.objects.get(user=user)
+        print(profile)
+        # serializer = UserSerializer(data=request.data)
+        # if serializer.is_valid():
+        #     serializer.save()
+        return Response({"message": "내 정보 수정하기"}, status=status.HTTP_201_CREATED)
+        # else:
+        #     return Response(
+        #         {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
+        #     )
 
 
 class SocialUrlView(APIView):
@@ -192,10 +200,10 @@ class KakaoLoginView(APIView):
         print(user_data)
         email = user_datajson.get("kakao_account").get("email")
         username = user_data.get("nickname")
-        profileimage = user_data.get("profile_image_url")
+        image = user_data.get("thumbnail_image_url", None)
         # print(email)
         # print(username)
-        # print(profileimage)
+        # print(image)
         try:
             user = User.objects.get(email=email)
             if user.login_type == "normal":
@@ -218,11 +226,14 @@ class KakaoLoginView(APIView):
             user = User.objects.create_user(
                 email=email,
                 username=username,
-                profileimage=profileimage,
+                profileimageurl=image,
                 login_type="kakao",
             )
+            # user.profileimage = image
             user.set_unusable_password()
             user.save()
+            print("프로필이미지")
+            print(user.profileimage)
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
             refresh["username"] = user.username
@@ -246,15 +257,15 @@ class GoogleLoginView(APIView):
             "https://www.googleapis.com/oauth2/v2/userinfo", headers=headers
         )
         user_data = user_data_request.json()
-        # print("user_data 딕셔너리 타입")
+        print("user_data 딕셔너리 타입")
         print(user_data)
 
         email = user_data.get("email")
         username = user_data.get("name")
-        profileimage = user_data.get("picture")
+        image = user_data.get("picture", None)
         # print(email)
         # print(username)
-        # print(profileimage)
+        print(image)
         try:
             user = User.objects.get(email=email)
             if user.login_type == "normal":
@@ -277,11 +288,13 @@ class GoogleLoginView(APIView):
             user = User.objects.create_user(
                 email=email,
                 username=username,
-                profileimage=profileimage,
                 login_type="google",
+                profileimageurl=image,
             )
             user.set_unusable_password()
             user.save()
+            print("프로필이미지")
+            print(user)
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
             refresh["username"] = user.username

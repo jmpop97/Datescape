@@ -68,8 +68,9 @@ class User(AbstractBaseUser):
         unique=True,
     )
     username = models.CharField("아이디", max_length=50, unique=True)
+    profileimageurl = models.URLField(blank=True)
     profileimage = models.ImageField(
-        upload_to="profile",
+        upload_to="profile/",
         blank=True,
         default="profile/default.png",
         validators=[FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png"])],
