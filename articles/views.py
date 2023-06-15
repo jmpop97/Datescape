@@ -233,7 +233,6 @@ class ArticleSearchView(generics.ListAPIView):
                     .distinct()
                     .order_by("-created_at")
                 )
-                print(queryset)
             return queryset
         # 태그 검색
         else:
