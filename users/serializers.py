@@ -29,5 +29,14 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         token["email"] = user.email
         token["username"] = user.username
+        token["login_type"] = user.login_type
+        token["is_admin"] = user.is_admin
 
         return token
+
+
+# 상대방 유저 정보 확인용
+class UserDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["email", "username", "profileimage"]
