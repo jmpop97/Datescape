@@ -100,6 +100,7 @@ class UserDetailView(APIView):
 
 class ProfileView(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
     def get(self, request):
         # print("내 정보")
         user = request.user
@@ -126,8 +127,10 @@ class ProfileView(APIView):
                 {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
             )
 
+
 class PasswordChangeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+
     def post(self, request):
         # print("비밀번호 변경하기")
         user = request.user
@@ -141,6 +144,7 @@ class PasswordChangeView(APIView):
             return Response(
                 {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
             )
+
 
 class SocialUrlView(APIView):
     def post(self, request):
