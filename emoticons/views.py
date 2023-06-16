@@ -268,6 +268,15 @@ except:
     pass
 
 
+class EmoticonImageView(APIView):
+    """이모티콘 이미지 전체"""
+
+    def get(self, request):
+        emoticon_images = EmoticonImage.objects.filter(db_status=1)
+        serializer = EmoticonImageSerializer(emoticon_images, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class SoldEmoticonCountListView(APIView):
     """관리자/ 판매중+판매중단 이모티콘 리스트 조회"""
 
