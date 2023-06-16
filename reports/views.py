@@ -32,29 +32,30 @@ class ReportView(APIView):
     }
 
     def post(self, request):
-        request_type = request.data.get("request_type")
-        try:
-            serializer = self.request_dic[request_type](data=request.data)
-            if serializer:
-                if serializer.is_valid():
-                    serializer.save(reporter=request.user.id)
-                    status_is = status.HTTP_200_OK
-                    message_is = {"message": "저장완료"}
-                else:
-                    status_is = status.HTTP_400_BAD_REQUEST
-                    message_is = serializer.errors
-                return Response(message_is, status=status_is)
-        except:
-            return Response(
-                {"message": "신고유형이 잘못되었습니다."}, status=status.HTTP_400_BAD_REQUEST
-            )
+        request_type = request.data.get("request_type", "")
+        print(request_type)
+        # try:
+        serializer = self.request_dic[request_type](data=request.data)
+        if serializer:
+            if serializer.is_valid():
+                serializer.save(reporter=request.user.id)
+                status_is = status.HTTP_200_OK
+                message_is = {"message": "저장완료"}
+            else:
+                status_is = status.HTTP_400_BAD_REQUEST
+                message_is = serializer.errors
+            return Response(message_is, status=status_is)
+
+    # except:
+    #     return Response(
+    #         {"message": "신고유형이 잘못되었습니다."}, status=status.HTTP_400_BAD_REQUEST
+    #     )
 
 
 class CategoryView(APIView):
     def search(self, id, name, count):
         """full category"""
         childs = ChildCategory.objects.filter(parent_category=id).order_by("riority")
-        print(childs)
 
         list_id = []
         for child in childs:
@@ -68,8 +69,8 @@ class CategoryView(APIView):
         return [id, name, list_id]
 
     def get(self, requst):
-        request_id = requst.data.get("id", 5)
-        limits = requst.data.get("limits", 5)
+        request_id = requst.GET.get("id", 5)
+        limits = requst.GET.get("limits", 5)
         try:
             main = ParentCategory.objects.get(id=request_id)
             list_id = self.search(request_id, str(main.name), limits)

@@ -15,6 +15,7 @@ class ReportUserSerializer(serializers.ModelSerializer):
         fields = (
             "report_id",
             "comment",
+            "report_type",
         )
 
     def create(self, validated_data):
@@ -36,6 +37,7 @@ class ReportArticleSerializer(serializers.ModelSerializer):
         fields = (
             "report_id",
             "comment",
+            "report_type",
         )
 
     def create(self, validated_data):
@@ -57,6 +59,7 @@ class ReportCommentSerializer(serializers.ModelSerializer):
         fields = (
             "report_id",
             "comment",
+            "report_type",
         )
 
     def create(self, validated_data):
