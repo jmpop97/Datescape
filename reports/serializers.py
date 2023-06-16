@@ -9,6 +9,7 @@ class ReportUserSerializer(serializers.ModelSerializer):
     신고자id값과 함께 저장"""
 
     report_id = serializers.IntegerField(source="report_user")
+    report_type = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = ReportUser
@@ -23,6 +24,9 @@ class ReportUserSerializer(serializers.ModelSerializer):
             id=validated_data["report_user"]
         )
         validated_data["reporter"] = User.objects.get(id=validated_data["reporter"])
+        validated_data["report_type"] = ChildCategory.objects.get(
+            id=validated_data["report_type"]
+        ).category
         return super().create(validated_data)
 
 
@@ -31,6 +35,7 @@ class ReportArticleSerializer(serializers.ModelSerializer):
     신고자id값과 함께 저장"""
 
     report_id = serializers.IntegerField(source="report_article")
+    report_type = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = ReportArticle
@@ -45,6 +50,10 @@ class ReportArticleSerializer(serializers.ModelSerializer):
             id=validated_data["report_article"]
         )
         validated_data["reporter"] = User.objects.get(id=validated_data["reporter"])
+        validated_data["report_type"] = ChildCategory.objects.get(
+            id=validated_data["report_type"]
+        ).category
+
         return super().create(validated_data)
 
 
@@ -53,6 +62,7 @@ class ReportCommentSerializer(serializers.ModelSerializer):
     신고자id값과 함께 저장"""
 
     report_id = serializers.IntegerField(source="report_comment")
+    report_type = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = ReportComment
@@ -67,6 +77,9 @@ class ReportCommentSerializer(serializers.ModelSerializer):
             id=validated_data["report_comment"]
         )
         validated_data["reporter"] = User.objects.get(id=validated_data["reporter"])
+        validated_data["report_type"] = ChildCategory.objects.get(
+            id=validated_data["report_type"]
+        ).category
         return super().create(validated_data)
 
 
