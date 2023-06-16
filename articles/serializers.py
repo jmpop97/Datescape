@@ -24,7 +24,7 @@ class TagSerializer(serializers.ModelSerializer):
 class ArticleImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ArticleImage
-        fields = ("id", "images", "article")
+        fields = "__all__"
 
 
 class ArticleSerializer(serializers.ModelSerializer):
@@ -80,10 +80,10 @@ class ArticleSerializer(serializers.ModelSerializer):
         """
         try:
             article_images = obj.article_images.all()
-            image_urls = [article_image.image.url for article_image in article_images]
+            temp = ArticleImageSerializer(article_images, many=True)
         except AttributeError:
             image_urls = None
-        return image_urls
+        return temp.data
 
     def get_jibun_address(self, obj):
         kakao_map_data = obj.location
