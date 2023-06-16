@@ -146,7 +146,7 @@ class CommentSerializer(serializers.ModelSerializer):
         qs = CommentLike.objects.filter(comment=comment, db_status=1)
         likes = CommentLikeSerizlizer(qs, many=True).data
         return likes
-    
+
     def get_emoticon_image(self, comment):
         if comment.use_emoticon:
             image = EmoticonImage.objects.get(id=comment.use_emoticon.id)

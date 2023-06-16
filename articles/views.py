@@ -11,7 +11,15 @@ from articles.serializers import (
     CommentCreateSerializer,
     MapSearchSerializer,
 )
-from articles.models import Article, ArticleImage, Tag, TagList, Comment, CommentLike, MapDataBase
+from articles.models import (
+    Article,
+    ArticleImage,
+    Tag,
+    TagList,
+    Comment,
+    CommentLike,
+    MapDataBase,
+)
 from dsproject import settings
 from django.db.models import Q
 from haversine import haversine, Unit
@@ -156,16 +164,20 @@ class ArticleDetailView(APIView):
 
         if request.user == article.user:
             if "images" in request.data:
-                serializer = ArticleSerializer(article, data=request.data, context={"images":request.data.getlist("images")})
+                serializer = ArticleSerializer(
+                    article,
+                    data=request.data,
+                    context={"images": request.data.getlist("images")},
+                )
             else:
                 serializer = ArticleSerializer(article, data=request.data)
 
             if serializer.is_valid():
-                print('통과')
+                print("통과")
                 # 제목 / 내용 / 평점 저장
                 serializer.save()
 
-                #이미지 저장
+                # 이미지 저장
                 images_data = serializer.context.get("images", None)
                 if images_data:
                     for image_data in images_data:
@@ -187,7 +199,9 @@ class ArticleDetailView(APIView):
                         "X-NCP-APIGW-API-KEY": NAVER_MAPS_API_GW_API_KEY,
                     }
                     params = {"query": query}
-                    search_url = "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode"
+                    search_url = (
+                        "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode"
+                    )
                     response = requests.get(search_url, headers=headers, params=params)
                     result = response.json()
                     # 검색 결과에서 주소 정보 추출
@@ -208,7 +222,9 @@ class ArticleDetailView(APIView):
                             serializer.save()
                             serializer_id = serializer.data["id"]
                         for_update_article = Article.objects.get(id=article_id)
-                        update_mapdata = get_object_or_404(MapDataBase, id=serializer_id)
+                        update_mapdata = get_object_or_404(
+                            MapDataBase, id=serializer_id
+                        )
                         for_update_article.location = update_mapdata
                         for_update_article.save()
 
@@ -357,7 +373,9 @@ class CommentView(APIView):
         output: 요청 처리에 따라 status 값을 반환
         """
         article = get_object_or_404(Article, id=article_id, db_status=1)
-        comments = Comment.objects.filter(article=article, db_status=1).order_by('-created_at')
+        comments = Comment.objects.filter(article=article, db_status=1).order_by(
+            "-created_at"
+        )
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
