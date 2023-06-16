@@ -47,7 +47,7 @@ class ArticleView(APIView, PaginationHandler):
         """
         delete에서도 언급하겠지만 db_status 값이 1인 게시글들만 출력되게 작업했습니다.
         """
-        articles = Article.objects.filter(db_status=1)
+        articles = Article.objects.filter(db_status=1).order_by('-created_at')
         page = self.paginate_queryset(articles)
         if page is not None:
             serializer = self.get_paginated_response(
@@ -235,14 +235,35 @@ class ArticleSearchView(generics.ListAPIView):
                 )
             return queryset
         # 태그 검색
-        else:
+        elif self.request.query_params.get("option") == "tag":
             queryset_list = []
             queryset = Tag.objects.filter(Q(db_status=1) & Q(tag__icontains=search))
             if search is not None:
                 for a in queryset:
-                    taglist = a.taglist_set.all()
+                    taglist = a.taglist_set.all().order_by("-created_at")
                     for b in taglist:
                         queryset_list.append(b.article)
+            return queryset_list
+        # 지역 검색
+        else:
+            search_list = search.split(' ')
+            location_list = []
+            queryset_list = []
+            queryset = MapDataBase.objects.filter(db_status=1)
+            if search is not None:
+                for location in search_list:
+                    queryset = (
+                        queryset.filter(
+                            Q(jibun_address__icontains=location) | Q(road_address__icontains=location)
+                        )
+                        .distinct().order_by("-created_at")
+                    )
+                    for loc in queryset:
+                        location_list.append(loc)
+                for a in list(dict.fromkeys(location_list)):
+                    article_list = a.article_set.all().order_by("-created_at")
+                    for b in article_list:
+                        queryset_list.append(b)
             return queryset_list
 
 
@@ -259,7 +280,7 @@ class LocationArticlesView(generics.ListAPIView):
 
     def get_queryset(self):
         location = self.request.query_params.get("location")
-        queryset = Article.objects.filter(Q(db_status=1) & Q(location_id=location))
+        queryset = Article.objects.filter(Q(db_status=1) & Q(location_id=location)).order_by('-created_at')
         return queryset
 
 
@@ -282,7 +303,7 @@ class CommentView(APIView):
         output: 요청 처리에 따라 status 값을 반환
         """
         article = get_object_or_404(Article, id=article_id, db_status=1)
-        comments = Comment.objects.filter(article=article, db_status=1)
+        comments = Comment.objects.filter(article=article, db_status=1).order_by('-created_at')
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -404,6 +425,6 @@ class UserCommentView(APIView):
 
     def get(self, request):
         """작성한 댓글 가져오기"""
-        comments = Comment.objects.filter(writer=request.user, db_status=1)
+        comments = Comment.objects.filter(writer=request.user, db_status=1).order_by('-created_at')
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
