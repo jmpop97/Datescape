@@ -7,7 +7,9 @@ from articles.models import (
     Comment,
     CommentLike,
     MapDataBase,
+    EmoticonImage,
 )
+from emoticons.serializers import EmoticonImageSerializer
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -135,6 +137,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     username = serializers.SerializerMethodField()
     likers = serializers.SerializerMethodField()
+    emoticon_image = serializers.SerializerMethodField()
 
     def get_username(self, comment):
         return comment.writer.username
@@ -143,6 +146,14 @@ class CommentSerializer(serializers.ModelSerializer):
         qs = CommentLike.objects.filter(comment=comment, db_status=1)
         likes = CommentLikeSerizlizer(qs, many=True).data
         return likes
+    
+    def get_emoticon_image(self, comment):
+        if comment.use_emoticon:
+            image = EmoticonImage.objects.get(id=comment.use_emoticon.id)
+            emoticon_image = EmoticonImageSerializer(image).data
+            return emoticon_image["image"]
+        else:
+            return None
 
     class Meta:
         model = Comment

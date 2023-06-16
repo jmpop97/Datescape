@@ -282,7 +282,7 @@ class CommentView(APIView):
         output: 요청 처리에 따라 status 값을 반환
         """
         article = get_object_or_404(Article, id=article_id, db_status=1)
-        comments = Comment.objects.filter(article=article, db_status=1)
+        comments = Comment.objects.filter(article=article, db_status=1).order_by('-created_at')
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
