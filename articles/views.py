@@ -114,7 +114,6 @@ class ArticleView(APIView, PaginationHandler):
             },
             context={"images": request.data.getlist("images")},
         )
-        print(main_image)
         if article_serializer.is_valid():
             article = article_serializer.save(user=request.user)
             tags = request.data.get("tags", "").split("$%#&#^)!()")
@@ -126,7 +125,7 @@ class ArticleView(APIView, PaginationHandler):
             for tag in tags:
                 tag_obj, _ = Tag.objects.get_or_create(tag=tag)
                 article.tags.add(tag_obj)
-            return Response(article_serializer.data, status=status.HTTP_200_OK)
+            return Response(article.id, status=status.HTTP_200_OK)
         else:
             return Response(
                 article_serializer.errors, status=status.HTTP_400_BAD_REQUEST
