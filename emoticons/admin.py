@@ -10,8 +10,8 @@ class EmoticonAdmin(CommonModelAdmin):
 
 
 class EmoticonImageAdmin(CommonModelAdmin):
-    fields = ("emoticon", "image")
-    list_display = ("emoticon", "image")
+    fields = ("emoticon", "image", "size")
+    list_display = ("emoticon", "image", "size")
 
 
 class UserEmoticonListAdmin(CommonModelAdmin):
