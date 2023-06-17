@@ -74,7 +74,7 @@ class Article(CommonModel):
         db_table = "articles"
 
 
-class ArticleImage(models.Model):
+class ArticleImage(CommonModel):
     article = models.ForeignKey(
         Article, on_delete=models.CASCADE, related_name="article_images"
     )
