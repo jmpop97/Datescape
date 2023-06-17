@@ -9,10 +9,17 @@ from articles.serializers import (
     ArticleSerializer,
     CommentSerializer,
     CommentCreateSerializer,
-    CommentLikeSerizlizer,
     MapSearchSerializer,
 )
-from articles.models import Article, Tag, Comment, CommentLike, MapDataBase
+from articles.models import (
+    Article,
+    ArticleImage,
+    Tag,
+    TagList,
+    Comment,
+    CommentLike,
+    MapDataBase,
+)
 from dsproject import settings
 from django.db.models import Q
 from haversine import haversine, Unit
@@ -47,7 +54,7 @@ class ArticleView(APIView, PaginationHandler):
         """
         delete에서도 언급하겠지만 db_status 값이 1인 게시글들만 출력되게 작업했습니다.
         """
-        articles = Article.objects.filter(db_status=1)
+        articles = Article.objects.filter(db_status=1).order_by("-created_at")
         page = self.paginate_queryset(articles)
         if page is not None:
             serializer = self.get_paginated_response(
@@ -110,7 +117,7 @@ class ArticleView(APIView, PaginationHandler):
         print(main_image)
         if article_serializer.is_valid():
             article = article_serializer.save(user=request.user)
-            tags = request.data.get("tags", "").split("#")
+            tags = request.data.get("tags", "").split("$%#&#^)!()")
             while True:
                 try:
                     tags.remove("")
@@ -146,13 +153,97 @@ class ArticleDetailView(APIView):
         게시글 수정부분입니다.
         location 값이 int로 들어가는데 실제로 수정할 땐 주소로 수정 가능하게 해야 합니다.
         """
-        article = get_object_or_404(Article, id=article_id)
-        serializer = ArticleSerializer(article, data=request.data)
         # 작성자만 수정 가능하게!
+        article = get_object_or_404(Article, id=article_id)
+
+        remove_ids = request.data.get("images_rm")
+        if remove_ids:
+            ids_list = remove_ids.split(",")
+        else:
+            ids_list = []
+
         if request.user == article.user:
+            if "images" in request.data:
+                serializer = ArticleSerializer(
+                    article,
+                    data=request.data,
+                    context={"images": request.data.getlist("images")},
+                )
+            else:
+                serializer = ArticleSerializer(article, data=request.data)
+
             if serializer.is_valid():
+                print("통과")
+                # 제목 / 내용 / 평점 저장
                 serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
+
+                # 이미지 저장
+                images_data = serializer.context.get("images", None)
+                if images_data:
+                    for image_data in images_data:
+                        ArticleImage.objects.create(article=article, image=image_data)
+
+                # 이미지 삭제
+                if ids_list != None:
+                    for id in ids_list:
+                        k = ArticleImage.objects.get(id=id)
+                        k.delete()
+
+                # 지도 저장
+                if "query" in request.data:
+                    # 검색할 지번 또는 도로명 주소
+                    query = request.data.get("query")
+                    # 네이버 지도 API로부터 검색 결과 가져오기
+                    headers = {
+                        "X-NCP-APIGW-API-KEY-ID": NAVER_MAPS_API_GW_API_KEY_ID,
+                        "X-NCP-APIGW-API-KEY": NAVER_MAPS_API_GW_API_KEY,
+                    }
+                    params = {"query": query}
+                    search_url = (
+                        "https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode"
+                    )
+                    response = requests.get(search_url, headers=headers, params=params)
+                    result = response.json()
+                    # 검색 결과에서 주소 정보 추출
+                    address = result["addresses"][0]
+                    address_info = {
+                        "road_address": address["roadAddress"],
+                        "jibun_address": address["jibunAddress"],
+                        "coordinate_x": address["x"],
+                        "coordinate_y": address["y"],
+                    }
+                    serializer = MapSearchSerializer(data=address_info)
+                    if serializer.is_valid(raise_exception=True):
+                        try:
+                            serializer_id = MapDataBase.objects.get(
+                                road_address=address["roadAddress"]
+                            ).id
+                        except:
+                            serializer.save()
+                            serializer_id = serializer.data["id"]
+                        for_update_article = Article.objects.get(id=article_id)
+                        update_mapdata = get_object_or_404(
+                            MapDataBase, id=serializer_id
+                        )
+                        for_update_article.location = update_mapdata
+                        for_update_article.save()
+
+                # 태그 저장
+                if "tags" in request.data:
+                    tags = request.data.get("tags").split("$%#&#^)!()")
+                    saved_tags = TagList.objects.filter(article=article)
+                    for a in saved_tags:
+                        a.delete()
+                    for i, tag in enumerate(tags):
+                        if i == 0:
+                            pass
+                        else:
+                            tag_obj, _ = Tag.objects.get_or_create(tag=tag)
+                            article.tags.add(tag_obj)
+
+                save_article = get_object_or_404(Article, id=article_id)
+                save_serializer = ArticleSerializer(save_article)
+                return Response(save_serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
@@ -235,14 +326,37 @@ class ArticleSearchView(generics.ListAPIView):
                 )
             return queryset
         # 태그 검색
-        else:
+        elif self.request.query_params.get("option") == "tag":
             queryset_list = []
             queryset = Tag.objects.filter(Q(db_status=1) & Q(tag__icontains=search))
             if search is not None:
                 for a in queryset:
-                    taglist = a.taglist_set.all()
+                    taglist = a.taglist_set.all().order_by("-created_at")
                     for b in taglist:
                         queryset_list.append(b.article)
+            return queryset_list
+        # 지역 검색
+        else:
+            search_list = search.split(" ")
+            location_list = []
+            queryset_list = []
+            queryset = MapDataBase.objects.filter(db_status=1)
+            if search is not None:
+                for location in search_list:
+                    queryset = (
+                        queryset.filter(
+                            Q(jibun_address__icontains=location)
+                            | Q(road_address__icontains=location)
+                        )
+                        .distinct()
+                        .order_by("-created_at")
+                    )
+                    for loc in queryset:
+                        location_list.append(loc)
+                for a in list(dict.fromkeys(location_list)):
+                    article_list = a.article_set.all().order_by("-created_at")
+                    for b in article_list:
+                        queryset_list.append(b)
             return queryset_list
 
 
@@ -259,7 +373,9 @@ class LocationArticlesView(generics.ListAPIView):
 
     def get_queryset(self):
         location = self.request.query_params.get("location")
-        queryset = Article.objects.filter(Q(db_status=1) & Q(location_id=location))
+        queryset = Article.objects.filter(
+            Q(db_status=1) & Q(location_id=location)
+        ).order_by("-created_at")
         return queryset
 
 
@@ -282,7 +398,9 @@ class CommentView(APIView):
         output: 요청 처리에 따라 status 값을 반환
         """
         article = get_object_or_404(Article, id=article_id, db_status=1)
-        comments = Comment.objects.filter(article=article, db_status=1)
+        comments = Comment.objects.filter(article=article, db_status=1).order_by(
+            "-created_at"
+        )
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -404,6 +522,8 @@ class UserCommentView(APIView):
 
     def get(self, request):
         """작성한 댓글 가져오기"""
-        comments = Comment.objects.filter(writer=request.user, db_status=1)
+        comments = Comment.objects.filter(writer=request.user, db_status=1).order_by(
+            "-created_at"
+        )
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
