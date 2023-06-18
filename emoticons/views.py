@@ -158,7 +158,7 @@ class EmoticonDetailView(APIView):
     로그인 권한이 요구되며 수정 / 삭제는 요청하는 사용자와 이모티콘 제작자가 동일한 경우에만 허용됩니다.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get(self, request, emoticon_id):
         """
@@ -186,7 +186,7 @@ class EmoticonListView(APIView):
     로그인 권한이 요구되며 판매중 상태의 이모티콘 객체들을 반환합니다.
     """
 
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get(self, request):
         """
