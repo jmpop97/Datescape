@@ -8,8 +8,8 @@ class CommonModel(models.Model):
         (1, "active"),
         (2, "delete"),
     ]
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
     db_status = models.PositiveIntegerField(choices=db_status_choice, default=1)
 
     class Meta:
@@ -68,7 +68,10 @@ class User(AbstractBaseUser):
         unique=True,
     )
     username = models.CharField("아이디", max_length=50, unique=True)
-    profileimageurl = models.URLField(blank=True)
+    nickname = models.CharField(
+        "닉네임", max_length=50, null=True, blank=True, default="newBE"
+    )
+    profileimageurl = models.URLField(blank=True, null=True)
     profileimage = models.ImageField(
         upload_to="profile/",
         blank=True,

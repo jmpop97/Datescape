@@ -34,28 +34,32 @@ class EmoticonSerializer(serializers.ModelSerializer):
         if emoticon.creator:
             creator = emoticon.creator.username
         else:
-            creator = "서버 또는 삭제된 사용자"
+            creator = "삭제된 사용자"
         return creator
 
     def get_buy(self, emoticon):
-        request_user = self.context.get("user")
-        qs = UserEmoticonList.objects.filter(
-            sold_emoticon=emoticon, db_status=1, buyer=request_user
-        )
-        return bool(qs)
+        try:
+            request_user = self.context.get("user")
+            qs = UserEmoticonList.objects.filter(
+                sold_emoticon=emoticon, db_status=1, buyer=request_user
+            )
+            return bool(qs)
+        except:
+            # AnonymousUser
+            return None
 
     def get_req_username(self, emoticon):
-        if self.context.get("user"):
+        try:
             request_user = self.context.get("user")
             return request_user.username
-        else:
+        except:
             return None
 
     def get_req_user_email(self, emoticon):
-        if self.context.get("user"):
+        try:
             request_user = self.context.get("user")
             return request_user.email
-        else:
+        except:
             return None
 
     def get_sold_count(self, emoticon):

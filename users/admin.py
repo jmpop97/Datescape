@@ -11,6 +11,7 @@ from users.models import User
 class CommonModelAdmin(admin.ModelAdmin):
     """공통모델의 어드민"""
 
+    fields = ()
     list_display = ()
     readonly_fields = ()
     common_list_display = ("created_at", "updated_at", "db_status")
@@ -85,6 +86,7 @@ class UserAdmin(BaseUserAdmin):
     list_display = [
         "email",
         "username",
+        "nickname",
         "profileimage",
         "profileimageurl",
         "login_type",

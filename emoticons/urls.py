@@ -26,7 +26,4 @@ urlpatterns = [
         views.SoldEmoticonCountView.as_view(),
         name="sold_emoticon_count",
     ),  # 관리자/ 이모티콘 누적 판매량
-    path(
-        "images/", views.EmoticonImageView.as_view(), name="emoticon_image"
-    ),  # 이모티콘 이미지 전부 다 가져오기
 ]
