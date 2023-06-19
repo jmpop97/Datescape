@@ -83,6 +83,9 @@ class ArticleSerializer(serializers.ModelSerializer):
             temp = ArticleImageSerializer(article_images, many=True)
         except AttributeError:
             image_urls = None
+        print("=================================")
+        print(temp)
+        print("=================================")
         return temp.data
 
     def get_jibun_address(self, obj):
