@@ -1,4 +1,5 @@
 import requests
+from django.utils import timezone
 from django.conf import settings
 from django.shortcuts import redirect
 from rest_framework.views import APIView
@@ -15,6 +16,9 @@ from .serializers import (
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import permissions
+
+import random
+import string
 
 # from .tokens import account_activation_token
 # from django.utils.http               import urlsafe_base64_encode,urlsafe_base64_decode
@@ -220,8 +224,15 @@ class KakaoLoginView(APIView):
         # print("user_data 딕셔너리 타입")
         # print(user_data)
         email = user_datajson.get("kakao_account").get("email")
-        username = user_data.get("nickname")
+        nickname = user_data.get("nickname")
         image = user_data.get("thumbnail_image_url", None)
+        
+        ran_str = ""
+        ran_num = random.randint(0,99999)
+        for i in range(10):
+            ran_str += str(random.choice(string.ascii_letters+str(ran_num)))
+        
+        username = ran_str
         # print(email)
         # print(username)
         # print(image)
@@ -234,8 +245,11 @@ class KakaoLoginView(APIView):
             else:
                 refresh = RefreshToken.for_user(user)
                 refresh["email"] = user.email
-                refresh["username"] = user.username
+                refresh["nickname"] = user.nickname
                 refresh["login_type"] = user.login_type
+                user.last_login = timezone.now()
+                user.save()
+                refresh["last_login"] = str(user.last_login)
                 return Response(
                     {
                         "refresh": str(refresh),
@@ -247,18 +261,21 @@ class KakaoLoginView(APIView):
             user = User.objects.create_user(
                 email=email,
                 username=username,
+                nickname=nickname,
+                profileimage=None,
                 profileimageurl=image,
                 login_type="kakao",
             )
-            # user.profileimage = image
+            user.last_login = timezone.now()
             user.set_unusable_password()
             user.save()
             # print("프로필이미지")
             # print(user.profileimage)
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
-            refresh["username"] = user.username
+            refresh["nickname"] = user.nickname
             refresh["login_type"] = user.login_type
+            refresh["last_login"] = str(user.last_login)
             return Response(
                 {
                     "refresh": str(refresh),
@@ -282,8 +299,15 @@ class GoogleLoginView(APIView):
         # print(user_data)
 
         email = user_data.get("email")
-        username = user_data.get("name")
+        nickname = user_data.get("name")
         image = user_data.get("picture", None)
+        
+        ran_str = ""
+        ran_num = random.randint(0,99999)
+        for i in range(10):
+            ran_str += str(random.choice(string.ascii_letters+str(ran_num)))
+        
+        username = "google_"+ran_str
         # print(email)
         # print(username)
         # print(image)
@@ -296,8 +320,11 @@ class GoogleLoginView(APIView):
             else:
                 refresh = RefreshToken.for_user(user)
                 refresh["email"] = user.email
-                refresh["username"] = user.username
+                refresh["nickname"] = user.nickname
                 refresh["login_type"] = user.login_type
+                user.last_login = timezone.now()
+                user.save()
+                refresh["last_login"] = str(user.last_login)
                 return Response(
                     {
                         "refresh": str(refresh),
@@ -309,17 +336,21 @@ class GoogleLoginView(APIView):
             user = User.objects.create_user(
                 email=email,
                 username=username,
+                nickname=nickname,
                 login_type="google",
+                profileimage=None,
                 profileimageurl=image,
             )
+            user.last_login = timezone.now()
             user.set_unusable_password()
             user.save()
             # print("프로필이미지")
             # print(user)
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
-            refresh["username"] = user.username
+            refresh["nickname"] = user.nickname
             refresh["login_type"] = user.login_type
+            refresh["last_login"] = str(user.last_login)
             return Response(
                 {
                     "refresh": str(refresh),
@@ -363,8 +394,15 @@ class NaverLoginView(APIView):
         # # print("user_data 딕셔너리 타입")
         # print(user_data)
         email = user_data.get("email")
-        username = user_data.get("nickname")
+        nickname = user_data.get("nickname")
         image = user_data.get("profile_image")
+        
+        ran_str = ""
+        ran_num = random.randint(0,99999)
+        for i in range(10):
+            ran_str += str(random.choice(string.ascii_letters+str(ran_num)))
+        
+        username = ran_str
         # print(email)
         # print(username)
         # print(image)
@@ -377,8 +415,11 @@ class NaverLoginView(APIView):
             else:
                 refresh = RefreshToken.for_user(user)
                 refresh["email"] = user.email
-                refresh["username"] = user.username
+                refresh["nickname"] = user.nickname
                 refresh["login_type"] = user.login_type
+                user.last_login = timezone.now()
+                user.save()
+                refresh["last_login"] = str(user.last_login)
                 return Response(
                     {
                         "refresh": str(refresh),
@@ -389,16 +430,20 @@ class NaverLoginView(APIView):
         except:
             user = User.objects.create_user(
                 email=email,
+                nickname=nickname,
                 username=username,
+                profileimage=None,
                 profileimageurl=image,
                 login_type="naver",
             )
+            user.last_login = timezone.now()
             user.set_unusable_password()
             user.save()
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
-            refresh["username"] = user.username
+            refresh["nickname"] = user.nickname
             refresh["login_type"] = user.login_type
+            refresh["last_login"] = str(user.last_login)
             return Response(
                 {
                     "refresh": str(refresh),
@@ -415,8 +460,6 @@ class GithubLoginView(APIView):
         client_secret = GITHUB_SECRET_CODE
         code = request.data.get("code")
         redirect_uri = REDIRECT_URI
-        # print(code)
-        # print(state)
         token_url = f"https://github.com/login/oauth/access_token"
         token_request = requests.post(
             token_url,
@@ -431,14 +474,14 @@ class GithubLoginView(APIView):
             },
         )
         access_token = token_request.json().get("access_token")
-        user_data_request = requests.get(
-            "https://api.github.com/user",
-            headers={
-                "Authorization": f"Bearer {access_token}",
-            },
-        )
-        user_datajson = user_data_request.json()
-        print(user_datajson)
+        # user_data_request = requests.get(
+        #     "https://api.github.com/user",
+        #     headers={
+        #         "Authorization": f"Bearer {access_token}",
+        #     },
+        # )
+        # user_datajson = user_data_request.json()
+        # print(user_datajson)
         user_url = "https://api.github.com/user"
         user_email_url = "https://api.github.com/user/emails"
 
@@ -449,23 +492,41 @@ class GithubLoginView(APIView):
                 "Accept": "application/json",
             },
         )
-
         user_data = response.json()
+        # print(user_data)
+        
+        response = requests.get(
+            user_email_url,
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Accept": "application/json",
+            },
+        )
+        
         user_emails = response.json()
-
+        print(user_emails)
+        
         user_email = None
 
         for email_data in user_emails:
             if email_data.get("primary") and email_data.get("verified"):
                 user_email = email_data.get("email")
-
-        email = user_data.get("email")
-        username = user_data.get("nickname")
-        image = user_data.get("profile_image")
+                
+        email = user_email
+        nickname = user_data.get("name")
+        image = user_data.get("avatar_url")
+        
+        ran_str = ""
+        ran_num = random.randint(0,99999)
+        for i in range(10):
+            ran_str += str(random.choice(string.ascii_letters+str(ran_num)))
+        
+        username = ran_str
         # print(email)
+        # print(nickname)
         # print(username)
         # print(image)
-
+# user.profileimage = None
         try:
             user = User.objects.get(email=email)
             if user.login_type == "normal":
@@ -475,8 +536,11 @@ class GithubLoginView(APIView):
             else:
                 refresh = RefreshToken.for_user(user)
                 refresh["email"] = user.email
-                refresh["username"] = user.username
+                refresh["nickname"] = user.nickname
                 refresh["login_type"] = user.login_type
+                user.last_login = timezone.now()
+                user.save()
+                refresh["last_login"] = str(user.last_login)
                 return Response(
                     {
                         "refresh": str(refresh),
@@ -488,15 +552,19 @@ class GithubLoginView(APIView):
             user = User.objects.create_user(
                 email=email,
                 username=username,
+                nickname=nickname,
+                profileimage=None,
                 profileimageurl=image,
                 login_type="github",
             )
+            user.last_login = timezone.now()
             user.set_unusable_password()
             user.save()
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
-            refresh["username"] = user.username
+            refresh["nickname"] = user.nickname
             refresh["login_type"] = user.login_type
+            refresh["last_login"] = str(user.last_login)
             return Response(
                 {
                     "refresh": str(refresh),
