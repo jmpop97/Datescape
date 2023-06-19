@@ -86,6 +86,7 @@ class UserAdmin(BaseUserAdmin):
     list_display = [
         "email",
         "username",
+        "nickname",
         "profileimage",
         "profileimageurl",
         "login_type",
