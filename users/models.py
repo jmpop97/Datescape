@@ -68,7 +68,9 @@ class User(AbstractBaseUser):
         unique=True,
     )
     username = models.CharField("아이디", max_length=50, unique=True)
-    nickname = models.CharField("닉네임", max_length=50, null=True, blank=True, default="newBE")
+    nickname = models.CharField(
+        "닉네임", max_length=50, null=True, blank=True, default="newBE"
+    )
     profileimageurl = models.URLField(blank=True, null=True)
     profileimage = models.ImageField(
         upload_to="profile/",

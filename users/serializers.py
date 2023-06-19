@@ -4,6 +4,7 @@ from users.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import ParseError
 
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -15,7 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
-    
+
     def update(self, instance, validated_data):
         return super().update(instance, validated_data)
 
@@ -34,11 +35,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token["last_login"] = str(user.last_login)
 
         return token
-    
+
     def update_last_login(self, user):
         user.last_login = datetime.now()
-        user.save(update_fields=['last_login'])
-        
+        user.save(update_fields=["last_login"])
 
 
 # 상대방 유저 정보 확인용

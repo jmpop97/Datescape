@@ -226,12 +226,12 @@ class KakaoLoginView(APIView):
         email = user_datajson.get("kakao_account").get("email")
         nickname = user_data.get("nickname")
         image = user_data.get("thumbnail_image_url", None)
-        
+
         ran_str = ""
-        ran_num = random.randint(0,99999)
+        ran_num = random.randint(0, 99999)
         for i in range(10):
-            ran_str += str(random.choice(string.ascii_letters+str(ran_num)))
-        
+            ran_str += str(random.choice(string.ascii_letters + str(ran_num)))
+
         username = ran_str
         # print(email)
         # print(username)
@@ -301,13 +301,13 @@ class GoogleLoginView(APIView):
         email = user_data.get("email")
         nickname = user_data.get("name")
         image = user_data.get("picture", None)
-        
+
         ran_str = ""
-        ran_num = random.randint(0,99999)
+        ran_num = random.randint(0, 99999)
         for i in range(10):
-            ran_str += str(random.choice(string.ascii_letters+str(ran_num)))
-        
-        username = "google_"+ran_str
+            ran_str += str(random.choice(string.ascii_letters + str(ran_num)))
+
+        username = "google_" + ran_str
         # print(email)
         # print(username)
         # print(image)
@@ -396,12 +396,12 @@ class NaverLoginView(APIView):
         email = user_data.get("email")
         nickname = user_data.get("nickname")
         image = user_data.get("profile_image")
-        
+
         ran_str = ""
-        ran_num = random.randint(0,99999)
+        ran_num = random.randint(0, 99999)
         for i in range(10):
-            ran_str += str(random.choice(string.ascii_letters+str(ran_num)))
-        
+            ran_str += str(random.choice(string.ascii_letters + str(ran_num)))
+
         username = ran_str
         # print(email)
         # print(username)
@@ -494,7 +494,7 @@ class GithubLoginView(APIView):
         )
         user_data = response.json()
         # print(user_data)
-        
+
         response = requests.get(
             user_email_url,
             headers={
@@ -502,31 +502,31 @@ class GithubLoginView(APIView):
                 "Accept": "application/json",
             },
         )
-        
+
         user_emails = response.json()
         print(user_emails)
-        
+
         user_email = None
 
         for email_data in user_emails:
             if email_data.get("primary") and email_data.get("verified"):
                 user_email = email_data.get("email")
-                
+
         email = user_email
         nickname = user_data.get("name")
         image = user_data.get("avatar_url")
-        
+
         ran_str = ""
-        ran_num = random.randint(0,99999)
+        ran_num = random.randint(0, 99999)
         for i in range(10):
-            ran_str += str(random.choice(string.ascii_letters+str(ran_num)))
-        
+            ran_str += str(random.choice(string.ascii_letters + str(ran_num)))
+
         username = ran_str
         # print(email)
         # print(nickname)
         # print(username)
         # print(image)
-# user.profileimage = None
+        # user.profileimage = None
         try:
             user = User.objects.get(email=email)
             if user.login_type == "normal":
