@@ -30,6 +30,20 @@ class Tag(CommonModel):
 
     def __str__(self):
         return self.tag
+    
+
+class WeeklyTags(CommonModel):
+    """
+    한 주의 태그를 선정하여 담아두는 모델입니다.
+    """
+
+    tag = models.ForeignKey(
+        Tag, on_delete=models.CASCADE
+    )
+    def __str__(self):
+        return self.tag.tag
+    
+
 
 
 class Article(CommonModel):
