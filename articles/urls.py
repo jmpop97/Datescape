@@ -12,6 +12,7 @@ urlpatterns = [
         name="location_articles",
     ),
     path("article-search/", views.ArticleSearchView.as_view(), name="article_search"),
+    path("article-random/", views.ArticleRandomView.as_view(), name="article_random"),
     path(
         "<int:article_id>/comments/", views.CommentView.as_view(), name="comment_view"
     ),  # 댓글 생성 / 조회 / 수정 / 삭제
