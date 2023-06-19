@@ -249,7 +249,7 @@ try:
     if Emoticon.objects.filter(title="기본"):
         pass
     else:
-        base_emoticon = Emoticon(title="기본")
+        base_emoticon = Emoticon(title="기본", db_status=1)
         base_emoticon.save()
         input_images = [
             "base_emoticon/기본1.png",
@@ -288,11 +288,7 @@ class SoldEmoticonCountListView(APIView):
         판매자 지급금 계산을 위한 상품등록 된 이모티콘 리스트 조회
         """
         if request.user.is_admin == 1:
-            emoticon_list = []
-            for a in Emoticon.objects.filter(db_status=1):
-                emoticon_list.append(a)
-            for b in Emoticon.objects.filter(db_status=2):
-                emoticon_list.append(b)
+            emoticon_list = Emoticon.objects.all()
             serializer = EmoticonSerializer(emoticon_list, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
@@ -313,9 +309,4 @@ class SoldEmoticonCountView(APIView):
         """
         emoticon = get_object_or_404(Emoticon, id=emoticon_id)
         serializer = EmoticonSerializer(emoticon, context={"user": request.user})
-        if (emoticon.db_status == 1) or (emoticon.db_status == 2):
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            return Response(
-                {"message": "상품 등록 대기중인 이모티콘 입니다!"}, status=status.HTTP_403_FORBIDDEN
-            )
+        return Response(serializer.data, status=status.HTTP_200_OK)
