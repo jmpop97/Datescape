@@ -561,9 +561,12 @@ class ArticleRandomView(generics.ListAPIView):
 
 def get_random_article():
     global random_article
-    queryset = Article.objects.filter(db_status=1)
-    random_article = random.sample(list(queryset), k=5)
-
+    try:
+        queryset = Article.objects.filter(db_status=1)
+        random_article = random.sample(list(queryset), k=5)
+    except:
+        random_article = Article.objects.filter(db_status=1)
+   
 
 get_random_article()
 
@@ -579,9 +582,10 @@ def get_weekly_tags():
     random_tags = random.choice(list(queryset))
     WeeklyTags.objects.create(tag=random_tags)
 
-
-get_weekly_tags()
-
+try:
+    get_weekly_tags()
+except:
+    pass
 scheduler.add_job(get_weekly_tags, "cron", hour=0, id="rand_3")
 
 scheduler.start()
