@@ -30,8 +30,11 @@ from .pagination import PaginationHandler
 
 import json
 import requests
+import time
+import random
+from apscheduler.schedulers.background import BackgroundScheduler
 
-# Create your views here.
+
 REST_API_KEY = settings.REST_API
 NAVER_MAPS_API_GW_API_KEY_ID = settings.NAVER_MAPS_API_ID
 NAVER_MAPS_API_GW_API_KEY = settings.NAVER_MAPS_API_KEY
@@ -526,3 +529,49 @@ class UserCommentView(APIView):
         )
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ArticleRandomView(generics.ListAPIView):
+    """
+    여러개의 게시물을 무작위로 반환합니다.
+    태그를 무작위로 하나 선택하여 그 태그가 달린 게시물들을 반환합니다.
+
+    input: 쿼리=option
+    ouput: 무작위 게시물들
+
+    """
+
+    serializer_class = ArticleSerializer
+
+    def get_queryset(self):
+        # 게시물 임의 선택
+        if self.request.query_params.get("option") == "article":
+            return random_article
+        # 임의의 태그 선택
+        elif self.request.query_params.get("option") == "tag":
+            queryset_list = []
+            taglist = random_tag.taglist_set.all().order_by("-created_at")
+            for b in taglist:
+                queryset_list.append(b.article)
+            return queryset_list
+        
+
+def get_random_article():
+    global random_article
+    queryset = Article.objects.filter(db_status=1)
+    random_article = random.sample(list(queryset), k = 5)
+    
+def get_random_tag():
+    global random_tag
+    queryset = Tag.objects.filter(Q(db_status=1))
+    random_tag = random.choice(list(queryset))
+
+get_random_article()
+get_random_tag()
+
+scheduler = BackgroundScheduler()
+
+scheduler.add_job(get_random_article, 'cron', hour=0, id="rand_1")
+scheduler.add_job(get_random_tag, 'cron', hour=0, id="rand_2")
+
+scheduler.start()
