@@ -7,6 +7,7 @@ from articles.models import (
     Comment,
     CommentLike,
     MapDataBase,
+    WeeklyTags
 )
 from users.admin import CommonModelAdmin
 
@@ -55,6 +56,7 @@ class CommentLikeAdmin(CommonModelAdmin):
 
 
 admin.site.register(Tag)
+admin.site.register(WeeklyTags)
 admin.site.register(MapDataBase)
 admin.site.register(TagList, TagListAdmin)
 admin.site.register(Article, ArticlesAdmin)
