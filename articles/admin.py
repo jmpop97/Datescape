@@ -7,7 +7,7 @@ from articles.models import (
     Comment,
     CommentLike,
     MapDataBase,
-    WeeklyTags
+    WeeklyTags,
 )
 from users.admin import CommonModelAdmin
 

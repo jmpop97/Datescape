@@ -19,7 +19,7 @@ from articles.models import (
     Comment,
     CommentLike,
     MapDataBase,
-    WeeklyTags
+    WeeklyTags,
 )
 from dsproject import settings
 from django.db.models import Q
@@ -551,24 +551,25 @@ class ArticleRandomView(generics.ListAPIView):
         # 임의의 태그 선택
         elif self.request.query_params.get("option") == "tag":
             queryset_list = []
-            weekly_tags=WeeklyTags.objects.all()
+            weekly_tags = WeeklyTags.objects.all()
             tag = weekly_tags[0]
             taglist = tag.tag.taglist_set.all().order_by("-created_at")
             for b in taglist:
                 queryset_list.append(b.article)
             return queryset_list
-        
+
 
 def get_random_article():
     global random_article
     queryset = Article.objects.filter(db_status=1)
-    random_article = random.sample(list(queryset), k = 5)
+    random_article = random.sample(list(queryset), k=5)
+
 
 get_random_article()
 
 scheduler = BackgroundScheduler()
 
-scheduler.add_job(get_random_article, 'cron', hour=0, id="rand_1")
+scheduler.add_job(get_random_article, "cron", hour=0, id="rand_1")
 
 
 def get_weekly_tags():
@@ -576,10 +577,11 @@ def get_weekly_tags():
     weekly_tags[0].delete()
     queryset = Tag.objects.filter(Q(db_status=1))
     random_tags = random.choice(list(queryset))
-    WeeklyTags.objects.create(tag = random_tags)
-    
+    WeeklyTags.objects.create(tag=random_tags)
+
+
 get_weekly_tags()
 
-scheduler.add_job(get_weekly_tags, 'cron', hour=0, id="rand_3")
+scheduler.add_job(get_weekly_tags, "cron", hour=0, id="rand_3")
 
 scheduler.start()
