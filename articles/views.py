@@ -48,6 +48,21 @@ class CommonPagination(PageNumberPagination):
     max_page_size = 1000
 
 
+class UserArticleView(APIView):
+    """
+    유저 마이페이지 - 작성한 게시글 보기
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        articles = Article.objects.filter(user=request.user, db_status=1).order_by(
+            "-created_at"
+        )
+        serializer = ArticleSerializer(articles, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class ArticleView(APIView, PaginationHandler):
     """
     네이버지도 api사용
@@ -57,11 +72,11 @@ class ArticleView(APIView, PaginationHandler):
     pagination_class = CommonPagination
 
     def get(self, request):
-        score = request.GET.get('score')
+        score = request.GET.get("score")
         queryset = Article.objects.filter(db_status=1)
         if score:
             queryset = queryset.filter(score=score)
-        articles = queryset.order_by('-score', '-created_at')
+        articles = queryset.order_by("-score", "-created_at")
 
         page = self.paginate_queryset(articles)
         if page is not None:
@@ -571,6 +586,7 @@ def get_random_article():
     except:
         random_article = Article.objects.filter(db_status=1)
 
+
 get_random_article()
 
 scheduler = BackgroundScheduler()
@@ -586,9 +602,10 @@ def get_weekly_tags():
         random_tags = random.choice(list(queryset))
         WeeklyTags.objects.create(tag=random_tags)
     else:
-        for i in range(7-len(weekly_tags)):
+        for i in range(7 - len(weekly_tags)):
             random_tags = random.choice(list(queryset))
             WeeklyTags.objects.create(tag=random_tags)
+
 
 get_weekly_tags()
 
