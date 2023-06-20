@@ -1,4 +1,4 @@
-import json, datetime
+import json, datetime, random
 from rest_framework import serializers
 from users.models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -11,7 +11,9 @@ class UserSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def create(self, validated_data):
+        ran_num = str(random.randint(0, 99))
         user = super().create(validated_data)
+        user.nickname = user.username + ran_num
         password = user.password
         user.set_password(password)
         user.save()
@@ -26,6 +28,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def get_token(cls, user):
         token = super().get_token(user)
         token["email"] = user.email
+        token["username"] = user.username
         token["nickname"] = user.nickname
         token["login_type"] = user.login_type
         token["is_admin"] = user.is_admin

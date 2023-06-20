@@ -17,8 +17,12 @@ urlpatterns = [
     path("userlist/", views.UserListView.as_view(), name="userlist"),
     # 로그인한 본인 프로필정보
     path("profile/", views.ProfileView.as_view(), name="profile"),
-    path("profile/article/", UserArticleView.as_view(), name="profile_article"), # 내가 작성한 게시글
-    path("profile/comment/", UserCommentView.as_view(), name="profile_comment"), # 내가 작성한 댓글
+    path(
+        "profile/article/", UserArticleView.as_view(), name="profile_article"
+    ),  # 내가 작성한 게시글
+    path(
+        "profile/comment/", UserCommentView.as_view(), name="profile_comment"
+    ),  # 내가 작성한 댓글
     path(
         "profile/emoticon/buy", EmoticonView.as_view(), name="profile_buy_emoticon"
     ),  # 내가 구매한 이모티콘
