@@ -14,9 +14,18 @@ def send_emoticon_registration_email(recipient_email, subject, emoticon):
     """
     안내 이메일
     """
-    html_message = render_to_string('emoticon_registration.html', {'username': emoticon.creator, 'title': emoticon.title})
+    html_message = render_to_string(
+        "emoticon_registration.html",
+        {"username": emoticon.creator, "title": emoticon.title},
+    )
     plain_message = strip_tags(html_message)
-    send_mail(subject, plain_message, 'datescape2306@gmail.com', [recipient_email], html_message=html_message)
+    send_mail(
+        subject,
+        plain_message,
+        "datescape2306@gmail.com",
+        [recipient_email],
+        html_message=html_message,
+    )
 
 
 class Emoticon(CommonModel):
@@ -54,20 +63,20 @@ class Emoticon(CommonModel):
 
     def get_absolute_url(self):
         return reverse("emoticon_detail", kwargs={"emoticon_id": self.pk})
-    
+
     def save(self, *args, **kwargs):
         # 인스턴스가 존재하는지 확인(수정인지 확인)
         is_new = self.pk is None
         if not is_new:
             old_status = Emoticon.objects.get(pk=self.pk).db_status
-        
+
         super().save(*args, **kwargs)
 
         if not is_new:
             if (old_status == 0) and (self.db_status == 1):
                 # db_status가 신청상태에서 판매중으로 변경됐을때만 이메일 보내기
                 print(self.title)
-                subject = '(안내) DateScape 이모티콘 상품 등록 완료 안내'
+                subject = "(안내) DateScape 이모티콘 상품 등록 완료 안내"
                 send_emoticon_registration_email(self.creator.email, subject, self)
 
 

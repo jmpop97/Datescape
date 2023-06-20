@@ -10,6 +10,7 @@ from articles.serializers import (
     CommentSerializer,
     CommentCreateSerializer,
     MapSearchSerializer,
+    BookMarkSerializer,
 )
 from articles.models import (
     Article,
@@ -20,6 +21,7 @@ from articles.models import (
     CommentLike,
     MapDataBase,
     WeeklyTags,
+    BookMark,
 )
 from dsproject import settings
 from django.db.models import Q
@@ -568,7 +570,7 @@ def get_random_article():
         random_article = random.sample(list(queryset), k=5)
     except:
         random_article = Article.objects.filter(db_status=1)
-   
+
 
 get_random_article()
 
@@ -584,6 +586,7 @@ def get_weekly_tags():
     random_tags = random.choice(list(queryset))
     WeeklyTags.objects.create(tag=random_tags)
 
+
 try:
     get_weekly_tags()
 except:
@@ -591,3 +594,36 @@ except:
 scheduler.add_job(get_weekly_tags, "cron", hour=0, id="rand_3")
 
 scheduler.start()
+
+
+class BookMarkView(APIView):
+    """게시글 북마크"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """(마이페이지) 북마크 리스트 보기"""
+        bookmark = BookMark.objects.filter(user=request.user)
+        serializer = BookMarkSerializer(bookmark, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        """북마크 등록/취소"""
+        article_id = request.data.get("article_id")
+        article = get_object_or_404(Article, id=article_id)
+        user = request.user
+
+        if BookMark.objects.filter(article=article, user=user):
+            BookMark.objects.filter(article=article, user=user).delete()
+            article_bookmarks = len(BookMark.objects.filter(article=article))
+            return Response(
+                {"message": "북마크 취소!", "article_bookmarks": article_bookmarks},
+                status=status.HTTP_200_OK,
+            )
+        else:
+            BookMark.objects.create(user=user, article=article)
+            article_bookmarks = len(BookMark.objects.filter(article=article))
+            return Response(
+                {"message": "북마크 등록!", "article_bookmarks": article_bookmarks},
+                status=status.HTTP_200_OK,
+            )
