@@ -55,10 +55,12 @@ class ArticleView(APIView, PaginationHandler):
     pagination_class = CommonPagination
 
     def get(self, request):
-        """
-        delete에서도 언급하겠지만 db_status 값이 1인 게시글들만 출력되게 작업했습니다.
-        """
-        articles = Article.objects.filter(db_status=1).order_by("-created_at")
+        score = request.GET.get('score')
+        queryset = Article.objects.filter(db_status=1)
+        if score:
+            queryset = queryset.filter(score=score)
+        articles = queryset.order_by('-score', '-created_at')
+
         page = self.paginate_queryset(articles)
         if page is not None:
             serializer = self.get_paginated_response(
