@@ -118,9 +118,9 @@ class ProfileView(APIView):
     def put(self, request):
         # print("내 정보 수정하기")
         user = request.user
-        print(user)
+        # print(user)
         serializer = ProfileEditSerializer(user, data=request.data)
-        print(request.data)
+        # print(request.data)
         if serializer.is_valid():
             serializer.save()
             # print("정보수정")
@@ -232,7 +232,7 @@ class KakaoLoginView(APIView):
         for i in range(10):
             ran_str += str(random.choice(string.ascii_letters + str(ran_num)))
 
-        username = ran_str
+        username = "kakao_" + ran_str
         # print(email)
         # print(username)
         # print(image)
@@ -287,7 +287,7 @@ class KakaoLoginView(APIView):
 
 class GoogleLoginView(APIView):
     def post(self, request):
-        print("google소셜 인가코드 받아서 유저 데이터 저장")
+        # print("google소셜 인가코드 받아서 유저 데이터 저장")
         access_token = request.data["code"]
         # print(access_token)
         headers = {"Authorization": f"Bearer {access_token}"}
@@ -402,7 +402,7 @@ class NaverLoginView(APIView):
         for i in range(10):
             ran_str += str(random.choice(string.ascii_letters + str(ran_num)))
 
-        username = ran_str
+        username = "naver_" + ran_str
         # print(email)
         # print(username)
         # print(image)
@@ -521,7 +521,7 @@ class GithubLoginView(APIView):
         for i in range(10):
             ran_str += str(random.choice(string.ascii_letters + str(ran_num)))
 
-        username = ran_str
+        username = "github_" + ran_str
         # print(email)
         # print(nickname)
         # print(username)
