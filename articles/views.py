@@ -566,7 +566,6 @@ def get_random_article():
         random_article = random.sample(list(queryset), k=5)
     except:
         random_article = Article.objects.filter(db_status=1)
-   
 
 get_random_article()
 
@@ -577,15 +576,19 @@ scheduler.add_job(get_random_article, "cron", hour=0, id="rand_1")
 
 def get_weekly_tags():
     weekly_tags = WeeklyTags.objects.all()
-    weekly_tags[0].delete()
     queryset = Tag.objects.filter(Q(db_status=1))
-    random_tags = random.choice(list(queryset))
-    WeeklyTags.objects.create(tag=random_tags)
+    if len(weekly_tags) == 7:
+        weekly_tags[0].delete()
+        random_tags = random.choice(list(queryset))
+        WeeklyTags.objects.create(tag=random_tags)
+    else:
+        for i in range(7-len(weekly_tags)):
+            random_tags = random.choice(list(queryset))
+            WeeklyTags.objects.create(tag=random_tags)
 
-try:
-    get_weekly_tags()
-except:
-    pass
+
+get_weekly_tags()
+
 scheduler.add_job(get_weekly_tags, "cron", hour=0, id="rand_3")
 
 scheduler.start()
