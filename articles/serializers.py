@@ -8,6 +8,7 @@ from articles.models import (
     CommentLike,
     MapDataBase,
     EmoticonImage,
+    BookMark,
 )
 from emoticons.serializers import EmoticonImageSerializer
 
@@ -58,6 +59,7 @@ class ArticleSerializer(serializers.ModelSerializer):
             "coordinate_x",
             "coordinate_y",
             "location",
+            "book_mark",
         ]
 
     def create(self, validated_data):
@@ -173,4 +175,10 @@ class CommentLikeSerizlizer(serializers.ModelSerializer):
 
     class Meta:
         model = CommentLike
+        fields = "__all__"
+
+
+class BookMarkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BookMark
         fields = "__all__"

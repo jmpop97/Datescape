@@ -67,6 +67,7 @@ class Article(CommonModel):
     )
     tags = models.ManyToManyField(Tag, through="TagList")
     location = models.ForeignKey(MapDataBase, on_delete=models.CASCADE)
+    book_mark = models.ManyToManyField(User, through="BookMark")
 
     def __int__(self):
         return self.id
@@ -126,3 +127,12 @@ class CommentLike(CommonModel):
 
     def __str__(self):
         return self.comment.comment
+
+
+class BookMark(CommonModel):
+    article = models.ForeignKey(
+        Article, on_delete=models.CASCADE, related_name="book_mark_user", null=True
+    )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="book_mark", null=True
+    )
