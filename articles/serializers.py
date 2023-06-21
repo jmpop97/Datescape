@@ -9,6 +9,7 @@ from articles.models import (
     MapDataBase,
     EmoticonImage,
     BookMark,
+    Reply,
 )
 from emoticons.serializers import EmoticonImageSerializer
 
@@ -140,6 +141,7 @@ class CommentSerializer(serializers.ModelSerializer):
     username = serializers.SerializerMethodField()
     likers = serializers.SerializerMethodField()
     emoticon_image = serializers.SerializerMethodField()
+    reply_count = serializers.SerializerMethodField()
 
     def get_username(self, comment):
         return comment.writer.username
@@ -156,6 +158,9 @@ class CommentSerializer(serializers.ModelSerializer):
             return emoticon_image["image"]
         else:
             return None
+
+    def get_reply_count(self, comment):
+        return len(Reply.objects.filter(comment=comment, db_status=1))
 
     class Meta:
         model = Comment
@@ -181,4 +186,24 @@ class CommentLikeSerizlizer(serializers.ModelSerializer):
 class BookMarkSerializer(serializers.ModelSerializer):
     class Meta:
         model = BookMark
+        fields = "__all__"
+
+
+class ReplySerializer(serializers.ModelSerializer):
+    writer_name = serializers.SerializerMethodField()
+    emoticon_image = serializers.SerializerMethodField()
+
+    def get_writer_name(self, reply):
+        return reply.writer.username
+
+    def get_emoticon_image(self, comment):
+        if comment.use_emoticon:
+            image = EmoticonImage.objects.get(id=comment.use_emoticon.id)
+            emoticon_image = EmoticonImageSerializer(image).data
+            return emoticon_image["image"]
+        else:
+            return None
+
+    class Meta:
+        model = Reply
         fields = "__all__"
