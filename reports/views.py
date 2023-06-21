@@ -154,10 +154,3 @@ class ChildCategoryView(APIView):
         )
         return Response({"datas": lists, "name": name_list}, status=status.HTTP_200_OK)
 
-    def post(self, request):
-        match_data = request.data.get("match_data", [])
-        for parent_id, fix_id in match_data:
-            fix_c = ChildCategory.objects.get(id=fix_id)
-            fix_c.down_list_num = parent_id
-            fix_c.save()
-        return Response({"message": "good"}, status=status.HTTP_200_OK)
