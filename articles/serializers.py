@@ -8,6 +8,8 @@ from articles.models import (
     CommentLike,
     MapDataBase,
     EmoticonImage,
+    BookMark,
+    Reply,
 )
 from emoticons.serializers import EmoticonImageSerializer
 
@@ -58,6 +60,7 @@ class ArticleSerializer(serializers.ModelSerializer):
             "coordinate_x",
             "coordinate_y",
             "location",
+            "book_mark",
         ]
 
     def create(self, validated_data):
@@ -138,6 +141,11 @@ class CommentSerializer(serializers.ModelSerializer):
     username = serializers.SerializerMethodField()
     likers = serializers.SerializerMethodField()
     emoticon_image = serializers.SerializerMethodField()
+    reply_count = serializers.SerializerMethodField()
+    article_id = serializers.IntegerField(source="article.id")
+    article_title = serializers.CharField(source="article.title")
+    article_content = serializers.CharField(source="article.content")
+    article_main_image = serializers.ImageField(source="article.main_image")
 
     def get_username(self, comment):
         return comment.writer.username
@@ -154,6 +162,9 @@ class CommentSerializer(serializers.ModelSerializer):
             return emoticon_image["image"]
         else:
             return None
+
+    def get_reply_count(self, comment):
+        return len(Reply.objects.filter(comment=comment, db_status=1))
 
     class Meta:
         model = Comment
@@ -173,4 +184,36 @@ class CommentLikeSerizlizer(serializers.ModelSerializer):
 
     class Meta:
         model = CommentLike
+        fields = "__all__"
+
+
+class BookMarkSerializer(serializers.ModelSerializer):
+    article_id = serializers.IntegerField(source="article.id")
+    article_user = serializers.CharField(source="user.username")
+    article_title = serializers.CharField(source="article.title")
+    article_content = serializers.CharField(source="article.content")
+    article_main_image = serializers.ImageField(source="article.main_image")
+
+    class Meta:
+        model = BookMark
+        fields = "__all__"
+
+
+class ReplySerializer(serializers.ModelSerializer):
+    writer_name = serializers.SerializerMethodField()
+    emoticon_image = serializers.SerializerMethodField()
+
+    def get_writer_name(self, reply):
+        return reply.writer.username
+
+    def get_emoticon_image(self, comment):
+        if comment.use_emoticon:
+            image = EmoticonImage.objects.get(id=comment.use_emoticon.id)
+            emoticon_image = EmoticonImageSerializer(image).data
+            return emoticon_image["image"]
+        else:
+            return None
+
+    class Meta:
+        model = Reply
         fields = "__all__"

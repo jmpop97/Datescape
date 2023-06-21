@@ -19,4 +19,6 @@ urlpatterns = [
     path(
         "comments/like/", views.CommentLikeView.as_view(), name="comment_like_view"
     ),  # 댓글 좋아요
+    path("bookmark/", views.BookMarkView.as_view(), name="bookmark"),  # 게시글 북마크
+    path("<int:comment_id>/replys/", views.ReplyView.as_view(), name="reply"),  # 대댓글
 ]

@@ -10,6 +10,8 @@ from articles.serializers import (
     CommentSerializer,
     CommentCreateSerializer,
     MapSearchSerializer,
+    BookMarkSerializer,
+    ReplySerializer,
 )
 from articles.models import (
     Article,
@@ -20,6 +22,8 @@ from articles.models import (
     CommentLike,
     MapDataBase,
     WeeklyTags,
+    BookMark,
+    Reply,
 )
 from dsproject import settings
 from django.db.models import Q
@@ -46,6 +50,21 @@ class CommonPagination(PageNumberPagination):
     max_page_size = 1000
 
 
+class UserArticleView(APIView):
+    """
+    유저 마이페이지 - 작성한 게시글 보기
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        articles = Article.objects.filter(user=request.user, db_status=1).order_by(
+            "-created_at"
+        )
+        serializer = ArticleSerializer(articles, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class ArticleView(APIView, PaginationHandler):
     """
     네이버지도 api사용
@@ -55,10 +74,12 @@ class ArticleView(APIView, PaginationHandler):
     pagination_class = CommonPagination
 
     def get(self, request):
-        """
-        delete에서도 언급하겠지만 db_status 값이 1인 게시글들만 출력되게 작업했습니다.
-        """
-        articles = Article.objects.filter(db_status=1).order_by("-created_at")
+        score = request.GET.get("score")
+        queryset = Article.objects.filter(db_status=1)
+        if score:
+            queryset = queryset.filter(score=score)
+        articles = queryset.order_by("-score", "-created_at")
+
         page = self.paginate_queryset(articles)
         if page is not None:
             serializer = self.get_paginated_response(
@@ -107,7 +128,6 @@ class ArticleView(APIView, PaginationHandler):
                 serializer.save()
                 serializer_id = serializer.data["id"]
         # 게시글 저장
-        print(request.data.getlist("images"))
         article_serializer = ArticleSerializer(
             data={
                 "title": title,
@@ -176,7 +196,6 @@ class ArticleDetailView(APIView):
                 serializer = ArticleSerializer(article, data=request.data)
 
             if serializer.is_valid():
-                print("통과")
                 # 제목 / 내용 / 평점 저장
                 serializer.save()
 
@@ -292,7 +311,6 @@ class LocationListView(APIView):
         q.add(Q(db_status=1), q.AND)
         # 필터링
         near_articles = MapDataBase.objects.filter(q)
-        print(near_articles)
         # 내 위치와 필터링된 객체 사이의 거리가 2km 이하인 것만 가져오기
         test = [
             na
@@ -566,7 +584,7 @@ def get_random_article():
         random_article = random.sample(list(queryset), k=5)
     except:
         random_article = Article.objects.filter(db_status=1)
-   
+
 
 get_random_article()
 
@@ -577,15 +595,105 @@ scheduler.add_job(get_random_article, "cron", hour=0, id="rand_1")
 
 def get_weekly_tags():
     weekly_tags = WeeklyTags.objects.all()
-    weekly_tags[0].delete()
     queryset = Tag.objects.filter(Q(db_status=1))
-    random_tags = random.choice(list(queryset))
-    WeeklyTags.objects.create(tag=random_tags)
+    try:
+        if len(weekly_tags) == 7:
+            weekly_tags[0].delete()
+            random_tags = random.choice(list(queryset))
+            WeeklyTags.objects.create(tag=random_tags)
+        else:
+            for i in range(7 - len(weekly_tags)):
+                random_tags = random.choice(list(queryset))
+                WeeklyTags.objects.create(tag=random_tags)
+    except:
+        tag = Tag.objects.create(tag="여행")
+        WeeklyTags.objects.create(tag=tag)
 
-try:
-    get_weekly_tags()
-except:
-    pass
+
+# get_weekly_tags()
+
 scheduler.add_job(get_weekly_tags, "cron", hour=0, id="rand_3")
 
 scheduler.start()
+
+
+class BookMarkView(APIView):
+    """게시글 북마크"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """(마이페이지) 북마크 리스트 보기"""
+        bookmark = BookMark.objects.filter(user=request.user)
+        serializer = BookMarkSerializer(bookmark, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        """북마크 등록/취소"""
+        article_id = request.data.get("article_id")
+        article = get_object_or_404(Article, id=article_id)
+        user = request.user
+
+        if BookMark.objects.filter(article=article, user=user):
+            BookMark.objects.filter(article=article, user=user).delete()
+            article_bookmarks = len(BookMark.objects.filter(article=article))
+            return Response(
+                {"message": "북마크 취소!", "article_bookmarks": article_bookmarks},
+                status=status.HTTP_200_OK,
+            )
+        else:
+            BookMark.objects.create(user=user, article=article)
+            article_bookmarks = len(BookMark.objects.filter(article=article))
+            return Response(
+                {"message": "북마크 등록!", "article_bookmarks": article_bookmarks},
+                status=status.HTTP_200_OK,
+            )
+
+
+class ReplyView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, comment_id):
+        comment = get_object_or_404(Comment, id=comment_id)
+        reply = Reply.objects.filter(comment=comment, db_status=1).order_by(
+            "-created_at"
+        )
+        serializer = ReplySerializer(reply, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, comment_id):
+        print(request.data)
+        comment = get_object_or_404(Comment, id=comment_id)
+        user = request.user
+        serializer = ReplySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(comment=comment, writer=user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, comment_id):
+        reply_id = request.data["reply_id"]
+        comment = get_object_or_404(Comment, id=comment_id, db_status=1)
+        reply = get_object_or_404(Reply, id=reply_id, comment=comment, db_status=1)
+        if request.user == reply.writer:
+            serializer = ReplySerializer(reply, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(
+                {"message": "수정 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN
+            )
+
+    def delete(self, request, comment_id):
+        reply_id = request.data.get("reply_id")
+        reply = get_object_or_404(Reply, id=reply_id, db_status=1)
+        if request.user == reply.writer:
+            reply.db_status = 2
+            reply.save()
+            return Response({"message": "삭제되었습니다."}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message": "권한이 없습니다!"}, status=status.HTTP_403_FORBIDDEN)
