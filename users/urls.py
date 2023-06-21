@@ -25,7 +25,7 @@ urlpatterns = [
     ),  # 내가 작성한 댓글
     path(
         "profile/bookmark/", BookMarkView.as_view(), name="profile_bookmark"
-    ),  # 내가 구매한 이모티콘
+    ),  # 내가 북마크한 게시글
     path(
         "profile/emoticon/buy/", EmoticonView.as_view(), name="profile_buy_emoticon"
     ),  # 내가 구매한 이모티콘
