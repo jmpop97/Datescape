@@ -11,6 +11,7 @@ from articles.serializers import (
     CommentCreateSerializer,
     MapSearchSerializer,
     BookMarkSerializer,
+    ReplySerializer,
 )
 from articles.models import (
     Article,
@@ -22,6 +23,7 @@ from articles.models import (
     MapDataBase,
     WeeklyTags,
     BookMark,
+    Reply,
 )
 from dsproject import settings
 from django.db.models import Q
@@ -642,3 +644,52 @@ class BookMarkView(APIView):
                 {"message": "북마크 등록!", "article_bookmarks": article_bookmarks},
                 status=status.HTTP_200_OK,
             )
+
+
+class ReplyView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, comment_id):
+        comment = get_object_or_404(Comment, id=comment_id)
+        reply = Reply.objects.filter(comment=comment, db_status=1).order_by(
+            "-created_at"
+        )
+        serializer = ReplySerializer(reply, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, comment_id):
+        print(request.data)
+        comment = get_object_or_404(Comment, id=comment_id)
+        user = request.user
+        serializer = ReplySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(comment=comment, writer=user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, comment_id):
+        reply_id = request.data["reply_id"]
+        comment = get_object_or_404(Comment, id=comment_id, db_status=1)
+        reply = get_object_or_404(Reply, id=reply_id, comment=comment, db_status=1)
+        if request.user == reply.writer:
+            serializer = ReplySerializer(reply, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(
+                {"message": "수정 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN
+            )
+
+    def delete(self, request, comment_id):
+        reply_id = request.data.get("reply_id")
+        reply = get_object_or_404(Reply, id=reply_id, db_status=1)
+        if request.user == reply.writer:
+            reply.db_status = 2
+            reply.save()
+            return Response({"message": "삭제되었습니다."}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message": "권한이 없습니다!"}, status=status.HTTP_403_FORBIDDEN)

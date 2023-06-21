@@ -90,6 +90,7 @@ class UserAdmin(BaseUserAdmin):
         "nickname",
         "profileimage",
         "profileimageurl",
+        "is_active",
         "is_admin",
         "last_login",
     ]
