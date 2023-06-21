@@ -144,17 +144,19 @@ class ArticleDetailAPIViewTest(APITestCase):
                 path=url,
                 data=encode_multipart(data=self.update_data, boundary=BOUNDARY),
                 content_type=MULTIPART_CONTENT,
-                HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
+                HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
             )
             self.assertEqual(response.status_code, 200)
-            
+
     # 글 삭제하기
     def test_delete_comment(self):
         for article in self.articles:
             url = article.get_absolute_url()
-            response = self.client.delete(path=url, HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+            response = self.client.delete(
+                path=url, HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
+            )
             self.assertEqual(response.status_code, 204)
-    
+
     # 글 북마크
     def test_bookmark(self):
         for article in self.articles:
@@ -165,7 +167,7 @@ class ArticleDetailAPIViewTest(APITestCase):
                 HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
             )
             self.assertEqual(response.data["message"], "북마크 등록!")
-            
+
     # 북마크 목록 가져오기
     def test_get_bookmark(self):
         url = reverse("bookmark")
@@ -174,11 +176,13 @@ class ArticleDetailAPIViewTest(APITestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
         )
         self.assertEqual(response.status_code, 200)
-    
+
     # 내 게시물 가져오기
     def test_get_my_articles(self):
         url = reverse("profile_article")
-        response = self.client.get(path=url,  HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        response = self.client.get(
+            path=url, HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
+        )
         self.assertEqual(response.status_code, 200)
 
 
@@ -300,7 +304,7 @@ class CommentAPIViewTest(APITestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
         )
         self.assertEqual(response.data["message"], "좋아요!")
-    
+
     # 대댓글 가져오기
     def test_get_reply(self):
         url = reverse("reply", kwargs={"comment_id": self.comment.id})
@@ -308,31 +312,32 @@ class CommentAPIViewTest(APITestCase):
             path=url, HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
         )
         self.assertEqual(response.status_code, 200)
-    
+
     # 대댓글 작성하기
     def test_create_reply(self):
         url = reverse("reply", kwargs={"comment_id": self.comment.id})
         response = self.client.post(
             path=url,
             data={
-            "content": "reply test",
-        },
+                "content": "reply test",
+            },
             HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
         )
         self.assertEqual(response.status_code, 200)
-    
+
     # 대댓글 수정하기
     def test_create_reply(self):
         url = reverse("reply", kwargs={"comment_id": self.comment.id})
         response = self.client.post(
             path=url,
-            data={"reply_id": 1,
-                "content":"대댓글 르탄이 방패들고있음 수정",
-        },
+            data={
+                "reply_id": 1,
+                "content": "대댓글 르탄이 방패들고있음 수정",
+            },
             HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
         )
         self.assertEqual(response.status_code, 200)
-    
+
     # 대댓글 삭제하기
     def test_delete_reply(self):
         url = reverse("reply", kwargs={"comment_id": self.comment.id})
@@ -342,11 +347,13 @@ class CommentAPIViewTest(APITestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
         )
         self.assertEqual(response.data["message"], "삭제되었습니다.")
-        
+
     # 내 댓글 가져오기
     def test_get_my_comments(self):
         url = reverse("profile_comment")
-        response = self.client.get(path=url,  HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        response = self.client.get(
+            path=url, HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
+        )
         self.assertEqual(response.status_code, 200)
 
 
@@ -448,12 +455,11 @@ class SearchAPIViewTest(APITestCase):
         url = f"/articles/article-search/?option=tag&search=hi"
         response = self.client.get(url)
         for data in response.data["results"]:
-            self.assertEqual(data["tags"][1]['tag'], "hi")
+            self.assertEqual(data["tags"][1]["tag"], "hi")
         self.assertEqual(response.status_code, 200)
-        
+
     # 지역 검색하기
     def test_search_location(self):
         url = f"/articles/article-search/?option=location&search=구로"
         response = self.client.get(url)
         self.assertEqual(len(response.data["results"]), 3)
-        
