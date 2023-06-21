@@ -153,4 +153,3 @@ class ChildCategoryView(APIView):
             "down_list_num",
         )
         return Response({"datas": lists, "name": name_list}, status=status.HTTP_200_OK)
-

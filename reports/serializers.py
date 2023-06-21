@@ -84,7 +84,6 @@ class ReportCommentSerializer(serializers.ModelSerializer):
 
 
 class ChildCategorySerializer(serializers.ModelSerializer):
-    
     class Meta:
         model = ChildCategory
         fields = (
