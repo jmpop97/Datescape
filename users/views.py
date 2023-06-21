@@ -1,7 +1,12 @@
-import requests
+import requests, random, string
 from django.utils import timezone
 from django.conf import settings
 from django.shortcuts import redirect
+from django.http import HttpResponse, JsonResponse
+from django.core.exceptions import ValidationError
+from django.utils.encoding import force_str, force_bytes
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.core.mail import EmailMessage
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.generics import get_object_or_404
@@ -17,15 +22,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import permissions
 
-import random
-import string
-
-# from .tokens import account_activation_token
-# from django.utils.http               import urlsafe_base64_encode,urlsafe_base64_decode
-# from django.core.mail                import EmailMessage
-# from django.utils.encoding           import force_bytes, force_text
-# from django.http import HttpResponseRedirect
-# from rest_framework.permissions import AllowAny
+from users.tokens import account_activation_token
 from .models import User
 
 # 카카오
@@ -39,29 +36,103 @@ NAVER_SECRET_CODE = getattr(settings, "NAVER_SECRET_CODE")
 # 깃허브
 GITHUB_API_KEY = getattr(settings, "GITHUB_API_KEY")
 GITHUB_SECRET_CODE = getattr(settings, "GITHUB_SECRET_CODE")
+
 REDIRECT_URI = getattr(settings, "REDIRECT_URI")
-# REDIRECT_URI = "http://127.0.0.1:5500/"
-# print(GITHUB_API_KEY)
-# print(GITHUB_SECRET_CODE)
-# print(REDIRECT_URI)
+EMAIL_HOST_PASSWORD = getattr(settings, "EMAIL_HOST_PASSWORD")
 
 
+# 아이디 찾기
+class FindUserIDView(APIView):
+    def post(self, request):
+        email = request.data.get("email")
+        if User.objects.filter(email=email).exists():
+            user = User.objects.get(email=email)
+            if user.login_type == "normal":
+                # serializer = UserSerializer(user)
+                # return Response(serializer.data, status=status.HTTP_200_OK)
+                return Response((user.username), status=status.HTTP_200_OK)
+            else:
+                return Response(("소셜로그인을 이용해주세요"), status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response(
+                {"error": "해당 이메일에 일치하는 회원이 없습니다!"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+# 비밀번호 재설정 이메일보내기
+class ResetPasswordEmailView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request, uidb64, token):
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+
+            if account_activation_token.check_token(user, token):
+                return redirect(
+                    f"{REDIRECT_URI}/templates/passwordchange.html?uid={uid}"
+                )
+
+            return HttpResponse("만료된 링크입니다", status=status.HTTP_400_BAD_REQUEST)
+
+        except KeyError:
+            return JsonResponse({"message": "INVALID_KEY"}, status=400)
+
+
+# 회원가입 후 이메일 인증 확인 view
+class UserActivateView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request, uidb64, token):
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        try:
+            if user is not None and account_activation_token.check_token(user, token):
+                user.is_active = True
+                user.save()
+                print(user.email + "계정이 활성화 되었습니다")
+                return redirect(REDIRECT_URI)
+            else:
+                return HttpResponse("만료된 링크입니다", status=status.HTTP_400_BAD_REQUEST)
+
+        except ValidationError:
+            return JsonResponse({"message": "TYPE_ERROR"}, status=400)
+
+        except KeyError:
+            return JsonResponse({"message": "INVALID_KEY"}, status=400)
+
+
+# 회원가입
 class UserView(APIView):
     def post(self, request):
+        email = request.data.get("email")
+        if User.objects.filter(email=email).exists():
+            return Response(
+                "이미 존재하는 이메일입니다. 다른 이메일을사용해주세요.", status=status.HTTP_400_BAD_REQUEST
+            )
+
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "회원가입완료"}, status=status.HTTP_201_CREATED)
+            return Response(
+                {"message": "회원가입완료, 이메일을 확인해주세요!!"}, status=status.HTTP_201_CREATED
+            )
         else:
             return Response(
                 {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
             )
 
 
+# 로그인
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
 
+# 로그인된 유저 확인하기
 class mockView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -102,6 +173,7 @@ class UserDetailView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+# 마이페이지-내정보
 class ProfileView(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
@@ -132,21 +204,64 @@ class ProfileView(APIView):
             )
 
 
+# 로그인할때 비밀번호 재설정
+class ResetPasswordView(APIView):
+    def post(self, request):
+        try:
+            user_email = request.data.get("email")
+            user = User.objects.get(email=user_email)
+            if user:
+                if user.login_type == "normal":
+                    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+                    token = account_activation_token.make_token(user)
+                    to_email = user.email
+                    email = EmailMessage(
+                        "DateScape 비밀번호 재설정 이메일 입니다. 아래 링크를 확인해주세요",
+                        f"http://{REDIRECT_URI}users/reset/{uidb64}/{token}\n\n감사합니다.",
+                        to=[to_email],
+                    )
+                    email.send()
+                    return Response(("비밀번호 재설정 이메일 전송!"), status=status.HTTP_200_OK)
+                else:
+                    return Response(
+                        ("소셜로그인 회원입니다."), status=status.HTTP_400_BAD_REQUEST
+                    )
+
+        except User.DoesNotExist:
+            return Response(
+                {"error": "해당 이메일에 일치하는 회원이 없습니다!"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+# 일반회원 유저만 로그인중일때 비번 변경
 class PasswordChangeView(APIView):
+    """
+    {
+        "new_password1":"new_password",
+        "new_password2":"new_password"
+    }
+    """
+
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         # print("비밀번호 변경하기")
         user = request.user
         # print(user)
-        serializer = PasswordEditSerializer(user, data=request.data)
-        # print(request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(("비밀번호 변경하기 성공"), status=status.HTTP_200_OK)
+        if user.login_type == "normal":
+            serializer = PasswordEditSerializer(user, data=request.data)
+            # print(request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(("비밀번호 변경하기 성공"), status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"message": f"${serializer.errors}"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         else:
             return Response(
-                {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
+                ("SNS계정에서 변경하실 수 있습니다."), status=status.HTTP_400_BAD_REQUEST
             )
 
 
@@ -459,6 +574,7 @@ class GithubLoginView(APIView):
         client_id = GITHUB_API_KEY
         client_secret = GITHUB_SECRET_CODE
         code = request.data.get("code")
+        # print(code)
         redirect_uri = REDIRECT_URI
         token_url = f"https://github.com/login/oauth/access_token"
         token_request = requests.post(
@@ -474,6 +590,8 @@ class GithubLoginView(APIView):
             },
         )
         access_token = token_request.json().get("access_token")
+        # print("accesstoken")
+        # print(access_token)
         # user_data_request = requests.get(
         #     "https://api.github.com/user",
         #     headers={
@@ -504,7 +622,7 @@ class GithubLoginView(APIView):
         )
 
         user_emails = response.json()
-        print(user_emails)
+        # print(user_emails)
 
         user_email = None
 
