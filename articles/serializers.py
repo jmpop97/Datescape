@@ -140,6 +140,11 @@ class CommentSerializer(serializers.ModelSerializer):
     username = serializers.SerializerMethodField()
     likers = serializers.SerializerMethodField()
     emoticon_image = serializers.SerializerMethodField()
+    article_id = serializers.IntegerField(source="article.id")
+    article_title = serializers.CharField(source="article.title")
+    article_content = serializers.CharField(source="article.content")
+    article_main_image = serializers.CharField(source="article.main_image")
+    article_main_image = serializers.ImageField(source="article.main_image")
 
     def get_username(self, comment):
         return comment.writer.username
@@ -179,6 +184,11 @@ class CommentLikeSerizlizer(serializers.ModelSerializer):
 
 
 class BookMarkSerializer(serializers.ModelSerializer):
+    article_id = serializers.IntegerField(source="article.id")
+    article_title = serializers.CharField(source="article.title")
+    article_content = serializers.CharField(source="article.content")
+    article_main_image = serializers.ImageField(source="article.main_image")
+
     class Meta:
         model = BookMark
         fields = "__all__"
