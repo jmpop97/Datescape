@@ -185,6 +185,7 @@ class CommentLikeSerizlizer(serializers.ModelSerializer):
 
 class BookMarkSerializer(serializers.ModelSerializer):
     article_id = serializers.IntegerField(source="article.id")
+    article_user = serializers.CharField(source="user.username")
     article_title = serializers.CharField(source="article.title")
     article_content = serializers.CharField(source="article.content")
     article_main_image = serializers.ImageField(source="article.main_image")
