@@ -596,14 +596,18 @@ scheduler.add_job(get_random_article, "cron", hour=0, id="rand_1")
 def get_weekly_tags():
     weekly_tags = WeeklyTags.objects.all()
     queryset = Tag.objects.filter(Q(db_status=1))
-    if len(weekly_tags) == 7:
-        weekly_tags[0].delete()
-        random_tags = random.choice(list(queryset))
-        WeeklyTags.objects.create(tag=random_tags)
-    else:
-        for i in range(7 - len(weekly_tags)):
+    try:
+        if len(weekly_tags) == 7:
+            weekly_tags[0].delete()
             random_tags = random.choice(list(queryset))
             WeeklyTags.objects.create(tag=random_tags)
+        else:
+            for i in range(7 - len(weekly_tags)):
+                random_tags = random.choice(list(queryset))
+                WeeklyTags.objects.create(tag=random_tags)
+    except:
+        tag = Tag.objects.create(tag="여행")
+        WeeklyTags.objects.create(tag=tag)
 
 
 # get_weekly_tags()

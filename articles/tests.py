@@ -3,7 +3,7 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from users.models import User
 from faker import Faker
-from articles.models import Article, MapDataBase, Comment, Tag
+from articles.models import Article, MapDataBase, Comment, Tag, Reply
 from articles.serializers import ArticleSerializer
 from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
 from PIL import Image
@@ -146,8 +146,40 @@ class ArticleDetailAPIViewTest(APITestCase):
                 content_type=MULTIPART_CONTENT,
                 HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
             )
-            print(response.data)
             self.assertEqual(response.status_code, 200)
+            
+    # 글 삭제하기
+    def test_delete_comment(self):
+        for article in self.articles:
+            url = article.get_absolute_url()
+            response = self.client.delete(path=url, HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+            self.assertEqual(response.status_code, 204)
+    
+    # 글 북마크
+    def test_bookmark(self):
+        for article in self.articles:
+            url = reverse("bookmark")
+            response = self.client.post(
+                path=url,
+                data={"article_id": article.id},
+                HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+            )
+            self.assertEqual(response.data["message"], "북마크 등록!")
+            
+    # 북마크 목록 가져오기
+    def test_get_bookmark(self):
+        url = reverse("bookmark")
+        response = self.client.get(
+            path=url,
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        self.assertEqual(response.status_code, 200)
+    
+    # 내 게시물 가져오기
+    def test_get_my_articles(self):
+        url = reverse("profile_article")
+        response = self.client.get(path=url,  HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        self.assertEqual(response.status_code, 200)
 
 
 # 댓글 CRUD/좋아요 테스트
@@ -157,9 +189,6 @@ class CommentAPIViewTest(APITestCase):
         cls.user_data = {"username": "test2", "password": "test"}
         cls.user = User.objects.create_user("test2@test.com", "test2", "test")
         cls.writer = User.objects.create_user("test@test.com", "test", "test")
-        cls.tag1 = Tag.objects.create(tag="안녕")
-        cls.tag2 = Tag.objects.create(tag="hello")
-        cls.tag3 = Tag.objects.create(tag="hi")
         cls.locaton = MapDataBase.objects.create(
             jibun_address="경기 평택시 팽성읍 본정리 15-3",
             road_address="경기 평택시 팽성읍 광덕계양로 963",
@@ -185,6 +214,9 @@ class CommentAPIViewTest(APITestCase):
             "db_status_choice": 0,
             "db_status": 1,
         }
+        cls.reply = Reply.objects.create(
+            comment=cls.comment, writer=cls.user, content="reply test"
+        )
 
     def setUp(self):
         self.access_token = self.client.post(
@@ -268,6 +300,54 @@ class CommentAPIViewTest(APITestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
         )
         self.assertEqual(response.data["message"], "좋아요!")
+    
+    # 대댓글 가져오기
+    def test_get_reply(self):
+        url = reverse("reply", kwargs={"comment_id": self.comment.id})
+        response = self.client.get(
+            path=url, HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
+        )
+        self.assertEqual(response.status_code, 200)
+    
+    # 대댓글 작성하기
+    def test_create_reply(self):
+        url = reverse("reply", kwargs={"comment_id": self.comment.id})
+        response = self.client.post(
+            path=url,
+            data={
+            "content": "reply test",
+        },
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        self.assertEqual(response.status_code, 200)
+    
+    # 대댓글 수정하기
+    def test_create_reply(self):
+        url = reverse("reply", kwargs={"comment_id": self.comment.id})
+        response = self.client.post(
+            path=url,
+            data={"reply_id": 1,
+                "content":"대댓글 르탄이 방패들고있음 수정",
+        },
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        self.assertEqual(response.status_code, 200)
+    
+    # 대댓글 삭제하기
+    def test_delete_reply(self):
+        url = reverse("reply", kwargs={"comment_id": self.comment.id})
+        response = self.client.delete(
+            path=url,
+            data={"reply_id": 1},
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        self.assertEqual(response.data["message"], "삭제되었습니다.")
+        
+    # 내 댓글 가져오기
+    def test_get_my_comments(self):
+        url = reverse("profile_comment")
+        response = self.client.get(path=url,  HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
+        self.assertEqual(response.status_code, 200)
 
 
 # 사용자 주변 데이터 가져오기
@@ -277,9 +357,6 @@ class LocationListAPIViewTest(APITestCase):
         cls.user_data = {"username": "test2", "password": "test"}
         cls.articles = []
         cls.user = User.objects.create_user("test2@test.com", "test2", "test")
-        cls.tag1 = Tag.objects.create(tag="안녕")
-        cls.tag2 = Tag.objects.create(tag="hello")
-        cls.tag3 = Tag.objects.create(tag="hi")
         cls.locaton = MapDataBase.objects.create(
             jibun_address="서울 구로구 구로동 435",
             road_address="서울 구로구 가마산로 245",
@@ -338,7 +415,7 @@ class SearchAPIViewTest(APITestCase):
                 "title": "testcase",
                 "content": "testcode",
                 "score": 5,
-                "tags": [cls.tag1.id, cls.tag3.id],
+                "tags": [cls.tag3.id, cls.tag1.id],
             },
         ]
         cls.locaton = MapDataBase.objects.create(
@@ -367,9 +444,16 @@ class SearchAPIViewTest(APITestCase):
         self.assertEqual(response.status_code, 200)
 
     # 태그 검색하기
-    def test_search_article(self):
-        url = f"/articles/article-search/?option=tage&search=hi"
+    def test_search_tag(self):
+        url = f"/articles/article-search/?option=tag&search=hi"
         response = self.client.get(url)
         for data in response.data["results"]:
-            self.assertEqual(data["score"], 5)
+            self.assertEqual(data["tags"][1]['tag'], "hi")
         self.assertEqual(response.status_code, 200)
+        
+    # 지역 검색하기
+    def test_search_location(self):
+        url = f"/articles/article-search/?option=location&search=구로"
+        response = self.client.get(url)
+        self.assertEqual(len(response.data["results"]), 3)
+        
