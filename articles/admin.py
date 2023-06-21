@@ -9,6 +9,7 @@ from articles.models import (
     MapDataBase,
     WeeklyTags,
     BookMark,
+    Reply,
 )
 from users.admin import CommonModelAdmin
 
@@ -61,6 +62,11 @@ class BookMarkAdmin(CommonModelAdmin):
     list_display = ("user", "article")
 
 
+class ReplyAdmin(CommonModelAdmin):
+    fields = ("writer", "comment", "content")
+    list_display = ("writer", "comment", "content")
+
+
 admin.site.register(Tag)
 admin.site.register(WeeklyTags)
 admin.site.register(MapDataBase)
@@ -70,3 +76,4 @@ admin.site.register(ArticleImage)
 admin.site.register(Comment, CommentAdmin)
 admin.site.register(CommentLike, CommentLikeAdmin)
 admin.site.register(BookMark, BookMarkAdmin)
+admin.site.register(Reply, ReplyAdmin)
