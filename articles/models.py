@@ -140,6 +140,7 @@ class BookMark(CommonModel):
 
 class Reply(CommonModel):
     """대댓글"""
+
     comment = models.ForeignKey(Comment, on_delete=models.SET_NULL, null=True)
     writer = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     content = models.TextField("대댓글 내용", blank=True)
