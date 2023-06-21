@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from users import views
-from articles.views import UserArticleView, UserCommentView
+from articles.views import UserArticleView, UserCommentView, BookMarkView
 from emoticons.views import EmoticonView, EmoticonDetailView
 
 urlpatterns = [
@@ -24,10 +24,13 @@ urlpatterns = [
         "profile/comment/", UserCommentView.as_view(), name="profile_comment"
     ),  # 내가 작성한 댓글
     path(
-        "profile/emoticon/buy", EmoticonView.as_view(), name="profile_buy_emoticon"
+        "profile/bookmark/", BookMarkView.as_view(), name="profile_bookmark"
+    ),  # 내가 북마크한 게시글
+    path(
+        "profile/emoticon/buy/", EmoticonView.as_view(), name="profile_buy_emoticon"
     ),  # 내가 구매한 이모티콘
     path(
-        "profile/emoticon/apply",
+        "profile/emoticon/apply/",
         EmoticonDetailView.as_view(),
         name="profile_apply_emoticon",
     ),  # 내가 신청한 이모티콘
