@@ -126,7 +126,6 @@ class ArticleView(APIView, PaginationHandler):
                 serializer.save()
                 serializer_id = serializer.data["id"]
         # 게시글 저장
-        print(request.data.getlist("images"))
         article_serializer = ArticleSerializer(
             data={
                 "title": title,
@@ -195,7 +194,6 @@ class ArticleDetailView(APIView):
                 serializer = ArticleSerializer(article, data=request.data)
 
             if serializer.is_valid():
-                print("통과")
                 # 제목 / 내용 / 평점 저장
                 serializer.save()
 
@@ -311,7 +309,6 @@ class LocationListView(APIView):
         q.add(Q(db_status=1), q.AND)
         # 필터링
         near_articles = MapDataBase.objects.filter(q)
-        print(near_articles)
         # 내 위치와 필터링된 객체 사이의 거리가 2km 이하인 것만 가져오기
         test = [
             na
@@ -607,7 +604,7 @@ def get_weekly_tags():
             WeeklyTags.objects.create(tag=random_tags)
 
 
-get_weekly_tags()
+# get_weekly_tags()
 
 scheduler.add_job(get_weekly_tags, "cron", hour=0, id="rand_3")
 
