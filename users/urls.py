@@ -34,8 +34,23 @@ urlpatterns = [
     # 타인 유저 프로필
     path("<pk>/profile/", views.UserDetailView.as_view(), name="userprofile"),
     # 비밀번호 수정
-    path("password/change/", views.PasswordChangeView.as_view(), name="userprofile"),
-    # path('/activate/<str:uidb64>/<str:token>', views.Activate.as_view()),
+    path("password/change/", views.PasswordChangeView.as_view(), name="passwordchange"),
+    # 이메일 확인 후 user active
+    path(
+        "activate/<str:uidb64>/<str:token>",
+        views.UserActivateView.as_view(),
+        name="useractive",
+    ),
+    # 비밀번호 재설정(로그인X)
+    path("password/reset/", views.ResetPasswordView.as_view(), name="resetpassword"),
+    path(
+        "reset/<str:uidb64>/<str:token>",
+        views.ResetPasswordEmailView.as_view(),
+        name="resetpasswordemail",
+    ),
+    # 아이디 찾기
+    path("find/id/", views.FindUserIDView.as_view(), name="finduserid"),
+    # 소셜로그인
     path("social/", views.SocialUrlView.as_view(), name="social_login"),
     path("kakao-login/", views.KakaoLoginView.as_view(), name="kakao_login"),
     path("naver-login/", views.NaverLoginView.as_view(), name="naver_login"),
