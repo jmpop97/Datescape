@@ -568,13 +568,10 @@ class ArticleRandomView(generics.ListAPIView):
             return random_article
         # 임의의 태그 선택
         elif self.request.query_params.get("option") == "tag":
-            queryset_list = []
             weekly_tags = WeeklyTags.objects.all()
             tag = weekly_tags[0]
-            taglist = tag.tag.taglist_set.all().order_by("-created_at")
-            for b in taglist:
-                queryset_list.append(b.article)
-            return queryset_list
+            articles = tag.tag.article_set.filter(db_status=1).order_by("-created_at")
+            return articles
 
 
 def get_random_article():
