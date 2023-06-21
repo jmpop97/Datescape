@@ -81,22 +81,21 @@ class CategoryView(APIView):
     def post(self, requst):
         """0:추가
         양수:수정
-        [부모삭제목록,자식삭제목록,부모수정,자식수정]
+        [부모수정,자식수정]
         """
         request_datas = requst.data.get("request_datas", [])
-        for del_ps, del_cs, fix_parent, fix_child in request_datas:
-            ParentCategory.objects.filter(id__in=del_ps).delete()
-            ChildCategory.objects.filter(id__in=del_cs).delete()
-
-            for fix_id, fix_string in fix_parent:
-                _obj, _ = CategoryName.objects.get_or_create(name=fix_string)
-                if fix_id > 0:
-                    fix_p = ParentCategory.objects.get(id=fix_id)
-                else:
-                    fix_p = ParentCategory()
-                fix_p.name = _obj
-                fix_p.save()
-            for i, [fix_id, fix_string] in enumerate(fix_child):
+        for fix_parent, fix_child in request_datas:
+            # ChildCategory.objects.filter(id__in=del_cs).delete()
+            _obj, _ = CategoryName.objects.get_or_create(name=fix_parent[1])
+            if int(fix_parent[0]) > 0:
+                fix_p = ParentCategory.objects.get(id=int(fix_parent[0]))
+            else:
+                fix_p = ParentCategory()
+            fix_p.name = _obj
+            fix_p.save()
+            not_del_cs = []
+            for i, [fix_id, fix_string, fix_down] in enumerate(fix_child):
+                fix_id = int(fix_id)
                 _obj, _ = CategoryName.objects.get_or_create(name=fix_string)
                 if fix_id > 0:
                     fix_c = ChildCategory.objects.get(id=fix_id)
@@ -104,28 +103,53 @@ class CategoryView(APIView):
                     fix_c = ChildCategory()
                 fix_c.parent_category = fix_p
                 fix_c.category = _obj
+                fix_c.down_list_num = fix_down
                 fix_c.riority = i
                 fix_c.save()
-
+                not_del_cs += [fix_c.id]
+            ChildCategory.objects.filter(parent_category=int(fix_parent[0])).exclude(
+                id__in=not_del_cs
+            ).delete()
             return Response({"message": "성공"}, status=status.HTTP_200_OK)
 
 
 class ChildCategoryView(APIView):
     def get(self, request):
-        request_type = request.data.get("request_type", [])
-        if request_type:
-            list = ChildCategory.objects.filter(
-                parent_category__in=request_type
-            ).order_by("riority")
-        else:
+        """["id",
+        "parent_category",
+        "category",
+        "down_list_num"]"""
+        request_type = request.GET.get("request_type", [])
+        print(request_type)
+        if request_type == "*":
             list = ChildCategory.objects.all()
-        lists = ChildCategorySerializer(list, many=True)
-        return Response(lists.data, status=status.HTTP_200_OK)
+        else:
+            try:
+                request_type = request_type.split(",")
+                list = (
+                    ChildCategory.objects.filter(parent_category__in=request_type)
+                    .order_by("parent_category")
+                    .order_by("riority")
+                )
 
-    def post(self, request):
-        match_data = request.data.get("match_data", [])
-        for parent_id, fix_id in match_data:
-            fix_c = ChildCategory.objects.get(id=fix_id)
-            fix_c.down_list_num = parent_id
-            fix_c.save()
-        return Response({"message": "good"}, status=status.HTTP_200_OK)
+            except:
+                return Response({"datas": [], "name": []}, status=status.HTTP_200_OK)
+
+        parent_names = list.values_list("parent_category")
+        child_names = list.values_list("category")
+        names = {}
+        for parent_name in parent_names:
+            names[parent_name[0]] = parent_name[0]
+        for child_name in child_names:
+            names[child_name[0]] = child_name[0]
+        name_list = CategoryName.objects.filter(id__in=names).values_list("id", "name")
+        #     if parent_name in names:
+        #         names[parent_name[0]] = names.id
+
+        lists = list.values_list(
+            "id",
+            "parent_category",
+            "category",
+            "down_list_num",
+        )
+        return Response({"datas": lists, "name": name_list}, status=status.HTTP_200_OK)
