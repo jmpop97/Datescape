@@ -303,9 +303,17 @@ class LocationListView(APIView):
         # 필터 조건
         q = Q()
         q.add(
-            Q(coordinate_y__range=(float(lat) - 0.01*float(dist), float(lat) + 0.01*float(dist)))
+            Q(
+                coordinate_y__range=(
+                    float(lat) - 0.01 * float(dist),
+                    float(lat) + 0.01 * float(dist),
+                )
+            )
             | Q(
-                coordinate_x__range=(float(lon) - 0.015*float(dist), float(lon) + 0.015*float(dist))
+                coordinate_x__range=(
+                    float(lon) - 0.015 * float(dist),
+                    float(lon) + 0.015 * float(dist),
+                )
             ),
             q.AND,
         )
