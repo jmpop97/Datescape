@@ -296,15 +296,24 @@ class LocationListView(APIView):
     """
 
     def get(self, request):
-        latitude = self.request.query_params.get("latitude", "")
-        longitude = self.request.query_params.get("longitude", "")
-        position = (float(latitude), float(longitude))
+        lat = self.request.query_params.get("lat", "")
+        lon = self.request.query_params.get("lon", "")
+        dist = self.request.query_params.get("dist", "")
+        position = (float(lat), float(lon))
         # 필터 조건
         q = Q()
         q.add(
-            Q(coordinate_y__range=(float(latitude) - 0.01, float(latitude) + 0.01))
+            Q(
+                coordinate_y__range=(
+                    float(lat) - 0.01 * float(dist),
+                    float(lat) + 0.01 * float(dist),
+                )
+            )
             | Q(
-                coordinate_x__range=(float(longitude) - 0.015, float(longitude) + 0.015)
+                coordinate_x__range=(
+                    float(lon) - 0.015 * float(dist),
+                    float(lon) + 0.015 * float(dist),
+                )
             ),
             q.AND,
         )
@@ -315,7 +324,7 @@ class LocationListView(APIView):
         test = [
             na
             for na in near_articles
-            if haversine(position, (na.coordinate_y, na.coordinate_x)) <= 2
+            if haversine(position, (na.coordinate_y, na.coordinate_x)) <= float(dist)
         ]
         serializer = MapSearchSerializer(test, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -594,20 +603,23 @@ def get_weekly_tags():
     weekly_tags = WeeklyTags.objects.all()
     queryset = Tag.objects.filter(Q(db_status=1))
     try:
-        if len(weekly_tags) == 7:
+        if weekly_tags.count() == 7:
             weekly_tags[0].delete()
             random_tags = random.choice(list(queryset))
             WeeklyTags.objects.create(tag=random_tags)
-        else:
-            for i in range(7 - len(weekly_tags)):
+        elif weekly_tags.count() < 7:
+            for i in range(7 - weekly_tags.count()):
                 random_tags = random.choice(list(queryset))
                 WeeklyTags.objects.create(tag=random_tags)
+        elif weekly_tags.count() > 7:
+            for i in range(weekly_tags.count() - 7):
+                weekly_tags[0].delete()
     except:
         tag = Tag.objects.create(tag="여행")
         WeeklyTags.objects.create(tag=tag)
 
 
-# get_weekly_tags()
+get_weekly_tags()
 
 scheduler.add_job(get_weekly_tags, "cron", hour=0, id="rand_3")
 
