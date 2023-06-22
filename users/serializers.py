@@ -36,7 +36,6 @@ class UserSerializer(serializers.ModelSerializer):
 
         mail_title = "DateScape : 이메일 인증을 완료해주세요"
         to_email = user.email
-        print(to_email)
         email = EmailMessage(mail_title, message_data, to=[to_email])
         email.send()
 
@@ -55,9 +54,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token["nickname"] = user.nickname
         token["login_type"] = user.login_type
         token["is_admin"] = user.is_admin
-        # print(str(user.last_login))
         # json_str = json.dumps(user.last_login, default=str)
-        # print(json_str)
         token["last_login"] = str(user.last_login)
 
         return token
@@ -103,11 +100,9 @@ class PasswordEditSerializer(serializers.ModelSerializer):
         user = super().update(instance, validated_data)
 
         if not new_password1 or not new_password2:
-            print("새로운 비번1,2 중 하나가 없음")
             return ParseError
 
         if new_password1 != new_password2:
-            print("새로운 비번1,2가 같지 않음")
             raise ValueError
 
         user.set_password(new_password1)

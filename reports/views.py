@@ -33,7 +33,6 @@ class ReportView(APIView):
 
     def post(self, request):
         request_type = request.data.get("request_type", "")
-        print(request_type)
         try:
             serializer = self.request_dic[request_type](data=request.data)
             if serializer:
@@ -120,7 +119,6 @@ class ChildCategoryView(APIView):
         "category",
         "down_list_num"]"""
         request_type = request.GET.get("request_type", [])
-        print(request_type)
         if request_type == "*":
             list = ChildCategory.objects.all()
         else:

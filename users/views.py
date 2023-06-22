@@ -94,7 +94,6 @@ class UserActivateView(APIView):
             if user is not None and account_activation_token.check_token(user, token):
                 user.is_active = True
                 user.save()
-                print(user.email + "계정이 활성화 되었습니다")
                 return redirect(REDIRECT_URI)
             else:
                 return HttpResponse("만료된 링크입니다", status=status.HTTP_400_BAD_REQUEST)
@@ -137,9 +136,6 @@ class mockView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        # print("로그인된 유저")
-        # print(type(request.user.id))
-        # print(request.user.pk)
         return Response(
             {"로그인된 유저이름 /// " + f"{request.user.email}"}, status=status.HTTP_200_OK
         )
@@ -178,7 +174,6 @@ class ProfileView(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get(self, request):
-        # print("내 정보")
         user = request.user
         if user:
             serializer = UserSerializer(user)
@@ -188,17 +183,12 @@ class ProfileView(APIView):
         )
 
     def put(self, request):
-        # print("내 정보 수정하기")
         user = request.user
-        # print(user)
         serializer = ProfileEditSerializer(user, data=request.data)
-        # print(request.data)
         if serializer.is_valid():
             serializer.save()
-            # print("정보수정")
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            # print("정보수정false")
             return Response(
                 {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
             )
@@ -245,12 +235,9 @@ class PasswordChangeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        # print("비밀번호 변경하기")
         user = request.user
-        # print(user)
         if user.login_type == "normal":
             serializer = PasswordEditSerializer(user, data=request.data)
-            # print(request.data)
             if serializer.is_valid():
                 serializer.save()
                 return Response(("비밀번호 변경하기 성공"), status=status.HTTP_200_OK)
@@ -267,7 +254,6 @@ class PasswordChangeView(APIView):
 
 class SocialUrlView(APIView):
     def post(self, request):
-        # print("소셜 인가코드 받기")
         social = request.data.get("social", None)
         if social is None:
             return Response(
@@ -303,14 +289,11 @@ class SocialUrlView(APIView):
 
 class KakaoLoginView(APIView):
     def post(self, request):
-        # print("소셜 인가코드 받아서 유저 데이터 저장")
         code = request.data.get("code", None)
-        # print(code)
         token_url = f"https://kauth.kakao.com/oauth/token"
         redirect_uri = REDIRECT_URI
 
         if code is None:
-            print("400error")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         access_token = requests.post(
@@ -336,8 +319,6 @@ class KakaoLoginView(APIView):
         )
         user_datajson = user_data_request.json()
         user_data = user_datajson.get("kakao_account").get("profile")
-        # print("user_data 딕셔너리 타입")
-        # print(user_data)
         email = user_datajson.get("kakao_account").get("email")
         nickname = user_data.get("nickname")
         image = user_data.get("thumbnail_image_url", None)
@@ -348,9 +329,6 @@ class KakaoLoginView(APIView):
             ran_str += str(random.choice(string.ascii_letters + str(ran_num)))
 
         username = "kakao_" + ran_str
-        # print(email)
-        # print(username)
-        # print(image)
         try:
             user = User.objects.get(email=email)
             if user.login_type == "normal":
@@ -384,8 +362,6 @@ class KakaoLoginView(APIView):
             user.last_login = timezone.now()
             user.set_unusable_password()
             user.save()
-            # print("프로필이미지")
-            # print(user.profileimage)
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
             refresh["nickname"] = user.nickname
@@ -402,16 +378,12 @@ class KakaoLoginView(APIView):
 
 class GoogleLoginView(APIView):
     def post(self, request):
-        # print("google소셜 인가코드 받아서 유저 데이터 저장")
         access_token = request.data["code"]
-        # print(access_token)
         headers = {"Authorization": f"Bearer {access_token}"}
         user_data_request = requests.get(
             "https://www.googleapis.com/oauth2/v2/userinfo", headers=headers
         )
         user_data = user_data_request.json()
-        # print("user_data 딕셔너리 타입")
-        # print(user_data)
 
         email = user_data.get("email")
         nickname = user_data.get("name")
@@ -423,9 +395,6 @@ class GoogleLoginView(APIView):
             ran_str += str(random.choice(string.ascii_letters + str(ran_num)))
 
         username = "google_" + ran_str
-        # print(email)
-        # print(username)
-        # print(image)
         try:
             user = User.objects.get(email=email)
             if user.login_type == "normal":
@@ -459,8 +428,6 @@ class GoogleLoginView(APIView):
             user.last_login = timezone.now()
             user.set_unusable_password()
             user.save()
-            # print("프로필이미지")
-            # print(user)
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
             refresh["nickname"] = user.nickname
@@ -477,13 +444,10 @@ class GoogleLoginView(APIView):
 
 class NaverLoginView(APIView):
     def post(self, request):
-        # print("naver 소셜 인가코드 받아서 유저 데이터 저장")
         client_id = NAVER_API_KEY
         client_secret = NAVER_SECRET_CODE
         code = request.data.get("code")
         state = request.data.get("state")
-        # print(code)
-        # print(state)
         token_url = (
             f"https://nid.naver.com/oauth2.0/token?grant_type=authorization_code"
         )
@@ -506,8 +470,6 @@ class NaverLoginView(APIView):
         )
         user_datajson = user_data_request.json()
         user_data = user_datajson.get("response")
-        # # print("user_data 딕셔너리 타입")
-        # print(user_data)
         email = user_data.get("email")
         nickname = user_data.get("nickname")
         image = user_data.get("profile_image")
@@ -518,9 +480,6 @@ class NaverLoginView(APIView):
             ran_str += str(random.choice(string.ascii_letters + str(ran_num)))
 
         username = "naver_" + ran_str
-        # print(email)
-        # print(username)
-        # print(image)
         try:
             user = User.objects.get(email=email)
             if user.login_type == "normal":
@@ -570,11 +529,9 @@ class NaverLoginView(APIView):
 
 class GithubLoginView(APIView):
     def post(self, request):
-        # print("github 소셜 인가코드 받아서 유저 데이터 저장")
         client_id = GITHUB_API_KEY
         client_secret = GITHUB_SECRET_CODE
         code = request.data.get("code")
-        # print(code)
         redirect_uri = REDIRECT_URI
         token_url = f"https://github.com/login/oauth/access_token"
         token_request = requests.post(
@@ -590,8 +547,6 @@ class GithubLoginView(APIView):
             },
         )
         access_token = token_request.json().get("access_token")
-        # print("accesstoken")
-        # print(access_token)
         # user_data_request = requests.get(
         #     "https://api.github.com/user",
         #     headers={
@@ -599,7 +554,6 @@ class GithubLoginView(APIView):
         #     },
         # )
         # user_datajson = user_data_request.json()
-        # print(user_datajson)
         user_url = "https://api.github.com/user"
         user_email_url = "https://api.github.com/user/emails"
 
@@ -611,7 +565,6 @@ class GithubLoginView(APIView):
             },
         )
         user_data = response.json()
-        # print(user_data)
 
         response = requests.get(
             user_email_url,
@@ -622,7 +575,6 @@ class GithubLoginView(APIView):
         )
 
         user_emails = response.json()
-        # print(user_emails)
 
         user_email = None
 
@@ -640,10 +592,6 @@ class GithubLoginView(APIView):
             ran_str += str(random.choice(string.ascii_letters + str(ran_num)))
 
         username = "github_" + ran_str
-        # print(email)
-        # print(nickname)
-        # print(username)
-        # print(image)
         # user.profileimage = None
         try:
             user = User.objects.get(email=email)
