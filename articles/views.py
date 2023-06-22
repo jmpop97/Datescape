@@ -296,23 +296,23 @@ class LocationListView(APIView):
     """
 
     def get(self, request):
-        lat = self.request.query_params.get("lat", "")
-        lon = self.request.query_params.get("lon", "")
-        dist = self.request.query_params.get("dist", "")
-        position = (float(lat), float(lon))
+        lat = float(self.request.query_params.get("lat", ""))
+        lon = float(self.request.query_params.get("lon", ""))
+        dist = float(self.request.query_params.get("dist", ""))
+        position = (lat, lon)
         # 필터 조건
         q = Q()
         q.add(
             Q(
                 coordinate_y__range=(
-                    float(lat) - 0.01 * float(dist),
-                    float(lat) + 0.01 * float(dist),
+                    lat - 0.01 * dist,
+                    lat + 0.01 * dist,
                 )
             )
             | Q(
                 coordinate_x__range=(
-                    float(lon) - 0.015 * float(dist),
-                    float(lon) + 0.015 * float(dist),
+                    lon - 0.015 * dist,
+                    lon + 0.015 * dist,
                 )
             ),
             q.AND,
@@ -324,7 +324,7 @@ class LocationListView(APIView):
         test = [
             na
             for na in near_articles
-            if haversine(position, (na.coordinate_y, na.coordinate_x)) <= float(dist)
+            if haversine(position, (na.coordinate_y, na.coordinate_x)) <= dist
         ]
         serializer = MapSearchSerializer(test, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -671,7 +671,6 @@ class ReplyView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, comment_id):
-        print(request.data)
         comment = get_object_or_404(Comment, id=comment_id)
         user = request.user
         serializer = ReplySerializer(data=request.data)

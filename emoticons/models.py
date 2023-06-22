@@ -75,7 +75,6 @@ class Emoticon(CommonModel):
         if not is_new:
             if (old_status == 0) and (self.db_status == 1):
                 # db_status가 신청상태에서 판매중으로 변경됐을때만 이메일 보내기
-                print(self.title)
                 subject = "(안내) DateScape 이모티콘 상품 등록 완료 안내"
                 send_emoticon_registration_email(self.creator.email, subject, self)
 

@@ -22,7 +22,6 @@ class UserRegisterationAPIViewTestCase(APITestCase):
         }
         response = self.client.post(url, user_data)
         # 에러확인 코드
-        # print(response.data)
         self.assertEqual(response.status_code, 201)
 
     # def test_login(self):
@@ -34,7 +33,6 @@ class UserRegisterationAPIViewTestCase(APITestCase):
     #     }
     #     response = self.client.post(url, user_data)
     #     # 에러확인 코드
-    #     print(response.data)
     #     self.assertEqual(response.status_code, 200)
 
 
@@ -45,9 +43,6 @@ class LoginUserTest(APITestCase):
 
     def test_login(self):
         response = self.client.post(reverse("token_obtain_pair"), self.data)
-        # print(response.data)
-        # print("일반로그인")
-        # print(response.data["access"])
         self.assertEqual(response.status_code, 200)
 
 
@@ -58,9 +53,6 @@ class SocialUrlTest(APITestCase):
             "social": "kakao-login"
         }
         response = self.client.post(reverse("social_login"), data)
-        # print(response.data)
-        # print("소셜로그인 인가코드")
-        # print(response.data["url"])
         self.assertEqual(response.status_code, 200)
 
 
