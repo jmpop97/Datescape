@@ -4,9 +4,11 @@ from django.conf import settings
 from django.shortcuts import redirect
 from django.http import HttpResponse, JsonResponse
 from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ParseError
 from django.utils.encoding import force_str, force_bytes
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
-from django.core.mail import EmailMessage
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.generics import get_object_or_404
@@ -39,6 +41,8 @@ GITHUB_SECRET_CODE = getattr(settings, "GITHUB_SECRET_CODE")
 
 REDIRECT_URI = getattr(settings, "REDIRECT_URI")
 EMAIL_HOST_PASSWORD = getattr(settings, "EMAIL_HOST_PASSWORD")
+BACK_URL = getattr(settings, "BACK_URL")
+DEFAULT_FROM_EMAIL = getattr(settings, "DEFAULT_FROM_EMAIL")
 
 
 # 아이디 찾기
@@ -70,7 +74,7 @@ class ResetPasswordEmailView(APIView):
 
             if account_activation_token.check_token(user, token):
                 return redirect(
-                    f"{REDIRECT_URI}/templates/passwordchange.html?uid={uid}"
+                    f"{REDIRECT_URI}templates/reset_password_change.html?uid={uid}"
                 )
 
             return HttpResponse("만료된 링크입니다", status=status.HTTP_400_BAD_REQUEST)
@@ -110,9 +114,15 @@ class UserActivateView(APIView):
 class UserView(APIView):
     def post(self, request):
         email = request.data.get("email")
+        username = request.data.get("username")
         if User.objects.filter(email=email).exists():
             return Response(
-                "이미 존재하는 이메일입니다. 다른 이메일을사용해주세요.", status=status.HTTP_400_BAD_REQUEST
+                "이미 존재하는 이메일입니다. 다른 이메일을 사용해주세요.", status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if User.objects.filter(username=username).exists():
+            return Response(
+                "이미 존재하는 아이디입니다. 다른 아이디를 사용해주세요.", status=status.HTTP_400_BAD_REQUEST
             )
 
         serializer = UserSerializer(data=request.data)
@@ -195,8 +205,16 @@ class ProfileView(APIView):
         # print(request.data)
         if serializer.is_valid():
             serializer.save()
-            # print("정보수정")
-            return Response(serializer.data, status=status.HTTP_200_OK)
+
+            refresh = RefreshToken.for_user(user)
+            refresh["email"] = user.email
+            refresh["nickname"] = user.nickname
+            refresh["username"] = user.username
+            refresh["login_type"] = user.login_type
+            return Response(
+                (serializer.data, str(refresh), str(refresh.access_token)),
+                status=status.HTTP_200_OK,
+            )
         else:
             # print("정보수정false")
             return Response(
@@ -204,7 +222,7 @@ class ProfileView(APIView):
             )
 
 
-# 로그인할때 비밀번호 재설정
+# 비밀번호 재설정 이메일에서 링크 보내기
 class ResetPasswordView(APIView):
     def post(self, request):
         try:
@@ -212,15 +230,24 @@ class ResetPasswordView(APIView):
             user = User.objects.get(email=user_email)
             if user:
                 if user.login_type == "normal":
-                    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-                    token = account_activation_token.make_token(user)
-                    to_email = user.email
-                    email = EmailMessage(
-                        "DateScape 비밀번호 재설정 이메일 입니다. 아래 링크를 확인해주세요",
-                        f"http://{REDIRECT_URI}users/reset/{uidb64}/{token}\n\n감사합니다.",
-                        to=[to_email],
+                    html = render_to_string(
+                        "password_reset.html",
+                        {
+                            "backend_base_url": BACK_URL,
+                            "uidb64": urlsafe_base64_encode(force_bytes(user.id))
+                            .encode()
+                            .decode(),
+                            "token": account_activation_token.make_token(user),
+                        },
                     )
-                    email.send()
+                    to_email = user.email
+                    send_mail(
+                        "DateScape : 비밀번호 초기화 인증 메일입니다!",
+                        "_",
+                        DEFAULT_FROM_EMAIL,
+                        [to_email],
+                        html_message=html,
+                    )
                     return Response(("비밀번호 재설정 이메일 전송!"), status=status.HTTP_200_OK)
                 else:
                     return Response(
@@ -231,6 +258,29 @@ class ResetPasswordView(APIView):
             return Response(
                 {"error": "해당 이메일에 일치하는 회원이 없습니다!"}, status=status.HTTP_400_BAD_REQUEST
             )
+
+    def put(self, request):
+        new_password1 = request.data.get("new_password2")
+        new_password2 = request.data.get("new_password2")
+        user_id = request.data.get("user_id")
+        print(user_id)
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response(
+                "해당 이메일에 일치하는 회원이 없습니다!", status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not new_password1 or not new_password2:
+            return Response("비밀번호는 필수입니다!", status=status.HTTP_400_BAD_REQUEST)
+        if new_password1 != new_password2:
+            return Response(
+                "비밀번호가 일치하지 않습니다. 다시 확인해주세요!", status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.set_password(new_password2)
+        user.save()
+        return Response({"message": "비밀번호 재설정이 완료되었습니다!"})
 
 
 # 일반회원 유저만 로그인중일때 비번 변경
@@ -262,6 +312,44 @@ class PasswordChangeView(APIView):
         else:
             return Response(
                 ("SNS계정에서 변경하실 수 있습니다."), status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+# 회원가입 이메일 인증 재전송
+class ResendEmailView(APIView):
+    def post(self, request):
+        try:
+            user_email = request.data.get("email")
+            user = User.objects.get(email=user_email)
+            if user:
+                if user.login_type == "normal":
+                    html = render_to_string(
+                        "register_email.html",
+                        {
+                            "backend_base_url": BACK_URL,
+                            "uidb64": urlsafe_base64_encode(force_bytes(user.id))
+                            .encode()
+                            .decode(),
+                            "token": account_activation_token.make_token(user),
+                        },
+                    )
+                    to_email = user.email
+                    send_mail(
+                        "DateScape : 회원가입 인증 재전송 이메일입니다. 확인해주세요.",
+                        "_",
+                        DEFAULT_FROM_EMAIL,
+                        [to_email],
+                        html_message=html,
+                    )
+                    return Response(("일반회원 이메일 인증 재전송 성공!"), status=status.HTTP_200_OK)
+                else:
+                    return Response(
+                        ("소셜로그인 회원입니다."), status=status.HTTP_400_BAD_REQUEST
+                    )
+
+        except User.DoesNotExist:
+            return Response(
+                {"error": "해당 이메일에 일치하는 회원이 없습니다!"}, status=status.HTTP_400_BAD_REQUEST
             )
 
 

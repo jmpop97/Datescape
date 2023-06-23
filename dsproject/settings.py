@@ -33,6 +33,9 @@ REST_API = secrets.get("REST_API", "")
 NAVER_MAPS_API_ID = secrets.get("NAVER_MAPS_API_ID", "")
 NAVER_MAPS_API_KEY = secrets.get("NAVER_MAPS_API_KEY", "")
 
+# 이메일 인증 도메인
+BACK_URL = secrets.get("BACK_URL")
+
 # 소셜 로그인 REDIRECT_URI
 REDIRECT_URI = secrets.get("REDIRECT_URI")
 
@@ -213,3 +216,6 @@ EMAIL_HOST = "smtp.gmail.com"
 EMAIL_HOST_USER = "datescape2306@gmail.com"
 EMAIL_HOST_PASSWORD = secrets.get("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+# 비밀번호 재설정 링크 유효기간-10분
+PASSWORD_RESET_TIMEOUT = 600
