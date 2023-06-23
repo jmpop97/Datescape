@@ -363,7 +363,8 @@ class ArticleSearchView(generics.ListAPIView):
                 for a in queryset:
                     taglist = a.taglist_set.all().order_by("-created_at")
                     for b in taglist:
-                        queryset_list.append(b.article)
+                        if b.article.db_status == 1:
+                            queryset_list.append(b.article)
             return queryset_list
         # 지역 검색
         else:
@@ -384,7 +385,7 @@ class ArticleSearchView(generics.ListAPIView):
                     for loc in queryset:
                         location_list.append(loc)
                 for a in list(dict.fromkeys(location_list)):
-                    article_list = a.article_set.all().order_by("-created_at")
+                    article_list = a.article_set.filter(db_status=1).order_by("-created_at")
                     for b in article_list:
                         queryset_list.append(b)
             return queryset_list
