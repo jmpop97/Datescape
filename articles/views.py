@@ -324,7 +324,7 @@ class LocationListView(APIView):
         test = [
             na
             for na in near_articles
-            if haversine(position, (na.coordinate_y, na.coordinate_x)) <= dist
+            if (na.article_set.filter(db_status=1).count() != 0) and (haversine(position, (na.coordinate_y, na.coordinate_x))) <= dist
         ]
         serializer = MapSearchSerializer(test, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
