@@ -4,9 +4,11 @@ from django.conf import settings
 from django.shortcuts import redirect
 from django.http import HttpResponse, JsonResponse
 from django.core.exceptions import ValidationError
+from rest_framework.exceptions import ParseError
 from django.utils.encoding import force_str, force_bytes
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
-from django.core.mail import EmailMessage
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.generics import get_object_or_404
@@ -39,6 +41,8 @@ GITHUB_SECRET_CODE = getattr(settings, "GITHUB_SECRET_CODE")
 
 REDIRECT_URI = getattr(settings, "REDIRECT_URI")
 EMAIL_HOST_PASSWORD = getattr(settings, "EMAIL_HOST_PASSWORD")
+BACK_URL = getattr(settings, "BACK_URL")
+DEFAULT_FROM_EMAIL = getattr(settings, "DEFAULT_FROM_EMAIL")
 
 
 # 아이디 찾기
@@ -70,7 +74,7 @@ class ResetPasswordEmailView(APIView):
 
             if account_activation_token.check_token(user, token):
                 return redirect(
-                    f"{REDIRECT_URI}/templates/passwordchange.html?uid={uid}"
+                    f"{REDIRECT_URI}templates/reset_password_change.html?uid={uid}"
                 )
 
             return HttpResponse("만료된 링크입니다", status=status.HTTP_400_BAD_REQUEST)
@@ -94,7 +98,6 @@ class UserActivateView(APIView):
             if user is not None and account_activation_token.check_token(user, token):
                 user.is_active = True
                 user.save()
-                print(user.email + "계정이 활성화 되었습니다")
                 return redirect(REDIRECT_URI)
             else:
                 return HttpResponse("만료된 링크입니다", status=status.HTTP_400_BAD_REQUEST)
@@ -110,9 +113,15 @@ class UserActivateView(APIView):
 class UserView(APIView):
     def post(self, request):
         email = request.data.get("email")
+        username = request.data.get("username")
         if User.objects.filter(email=email).exists():
             return Response(
-                "이미 존재하는 이메일입니다. 다른 이메일을사용해주세요.", status=status.HTTP_400_BAD_REQUEST
+                "이미 존재하는 이메일입니다. 다른 이메일을 사용해주세요.", status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if User.objects.filter(username=username).exists():
+            return Response(
+                "이미 존재하는 아이디입니다. 다른 아이디를 사용해주세요.", status=status.HTTP_400_BAD_REQUEST
             )
 
         serializer = UserSerializer(data=request.data)
@@ -137,9 +146,6 @@ class mockView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        # print("로그인된 유저")
-        # print(type(request.user.id))
-        # print(request.user.pk)
         return Response(
             {"로그인된 유저이름 /// " + f"{request.user.email}"}, status=status.HTTP_200_OK
         )
@@ -178,7 +184,6 @@ class ProfileView(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get(self, request):
-        # print("내 정보")
         user = request.user
         if user:
             serializer = UserSerializer(user)
@@ -188,23 +193,27 @@ class ProfileView(APIView):
         )
 
     def put(self, request):
-        # print("내 정보 수정하기")
         user = request.user
-        # print(user)
         serializer = ProfileEditSerializer(user, data=request.data)
-        # print(request.data)
         if serializer.is_valid():
             serializer.save()
-            # print("정보수정")
-            return Response(serializer.data, status=status.HTTP_200_OK)
+
+            refresh = RefreshToken.for_user(user)
+            refresh["email"] = user.email
+            refresh["nickname"] = user.nickname
+            refresh["username"] = user.username
+            refresh["login_type"] = user.login_type
+            return Response(
+                (serializer.data, str(refresh), str(refresh.access_token)),
+                status=status.HTTP_200_OK,
+            )
         else:
-            # print("정보수정false")
             return Response(
                 {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
             )
 
 
-# 로그인할때 비밀번호 재설정
+# 비밀번호 재설정 이메일에서 링크 보내기
 class ResetPasswordView(APIView):
     def post(self, request):
         try:
@@ -212,15 +221,24 @@ class ResetPasswordView(APIView):
             user = User.objects.get(email=user_email)
             if user:
                 if user.login_type == "normal":
-                    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-                    token = account_activation_token.make_token(user)
-                    to_email = user.email
-                    email = EmailMessage(
-                        "DateScape 비밀번호 재설정 이메일 입니다. 아래 링크를 확인해주세요",
-                        f"http://{REDIRECT_URI}users/reset/{uidb64}/{token}\n\n감사합니다.",
-                        to=[to_email],
+                    html = render_to_string(
+                        "password_reset.html",
+                        {
+                            "backend_base_url": BACK_URL,
+                            "uidb64": urlsafe_base64_encode(force_bytes(user.id))
+                            .encode()
+                            .decode(),
+                            "token": account_activation_token.make_token(user),
+                        },
                     )
-                    email.send()
+                    to_email = user.email
+                    send_mail(
+                        "DateScape : 비밀번호 초기화 인증 메일입니다!",
+                        "_",
+                        DEFAULT_FROM_EMAIL,
+                        [to_email],
+                        html_message=html,
+                    )
                     return Response(("비밀번호 재설정 이메일 전송!"), status=status.HTTP_200_OK)
                 else:
                     return Response(
@@ -231,6 +249,29 @@ class ResetPasswordView(APIView):
             return Response(
                 {"error": "해당 이메일에 일치하는 회원이 없습니다!"}, status=status.HTTP_400_BAD_REQUEST
             )
+
+    def put(self, request):
+        new_password1 = request.data.get("new_password2")
+        new_password2 = request.data.get("new_password2")
+        user_id = request.data.get("user_id")
+        print(user_id)
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response(
+                "해당 이메일에 일치하는 회원이 없습니다!", status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not new_password1 or not new_password2:
+            return Response("비밀번호는 필수입니다!", status=status.HTTP_400_BAD_REQUEST)
+        if new_password1 != new_password2:
+            return Response(
+                "비밀번호가 일치하지 않습니다. 다시 확인해주세요!", status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.set_password(new_password2)
+        user.save()
+        return Response({"message": "비밀번호 재설정이 완료되었습니다!"})
 
 
 # 일반회원 유저만 로그인중일때 비번 변경
@@ -245,12 +286,9 @@ class PasswordChangeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        # print("비밀번호 변경하기")
         user = request.user
-        # print(user)
         if user.login_type == "normal":
             serializer = PasswordEditSerializer(user, data=request.data)
-            # print(request.data)
             if serializer.is_valid():
                 serializer.save()
                 return Response(("비밀번호 변경하기 성공"), status=status.HTTP_200_OK)
@@ -265,9 +303,46 @@ class PasswordChangeView(APIView):
             )
 
 
+# 회원가입 이메일 인증 재전송
+class ResendEmailView(APIView):
+    def post(self, request):
+        try:
+            user_email = request.data.get("email")
+            user = User.objects.get(email=user_email)
+            if user:
+                if user.login_type == "normal":
+                    html = render_to_string(
+                        "register_email.html",
+                        {
+                            "backend_base_url": BACK_URL,
+                            "uidb64": urlsafe_base64_encode(force_bytes(user.id))
+                            .encode()
+                            .decode(),
+                            "token": account_activation_token.make_token(user),
+                        },
+                    )
+                    to_email = user.email
+                    send_mail(
+                        "DateScape : 회원가입 인증 재전송 이메일입니다. 확인해주세요.",
+                        "_",
+                        DEFAULT_FROM_EMAIL,
+                        [to_email],
+                        html_message=html,
+                    )
+                    return Response(("일반회원 이메일 인증 재전송 성공!"), status=status.HTTP_200_OK)
+                else:
+                    return Response(
+                        ("소셜로그인 회원입니다."), status=status.HTTP_400_BAD_REQUEST
+                    )
+
+        except User.DoesNotExist:
+            return Response(
+                {"error": "해당 이메일에 일치하는 회원이 없습니다!"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+
 class SocialUrlView(APIView):
     def post(self, request):
-        # print("소셜 인가코드 받기")
         social = request.data.get("social", None)
         if social is None:
             return Response(
@@ -303,14 +378,11 @@ class SocialUrlView(APIView):
 
 class KakaoLoginView(APIView):
     def post(self, request):
-        # print("소셜 인가코드 받아서 유저 데이터 저장")
         code = request.data.get("code", None)
-        # print(code)
         token_url = f"https://kauth.kakao.com/oauth/token"
         redirect_uri = REDIRECT_URI
 
         if code is None:
-            print("400error")
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         access_token = requests.post(
@@ -336,8 +408,6 @@ class KakaoLoginView(APIView):
         )
         user_datajson = user_data_request.json()
         user_data = user_datajson.get("kakao_account").get("profile")
-        # print("user_data 딕셔너리 타입")
-        # print(user_data)
         email = user_datajson.get("kakao_account").get("email")
         nickname = user_data.get("nickname")
         image = user_data.get("thumbnail_image_url", None)
@@ -348,9 +418,6 @@ class KakaoLoginView(APIView):
             ran_str += str(random.choice(string.ascii_letters + str(ran_num)))
 
         username = "kakao_" + ran_str
-        # print(email)
-        # print(username)
-        # print(image)
         try:
             user = User.objects.get(email=email)
             if user.login_type == "normal":
@@ -384,8 +451,6 @@ class KakaoLoginView(APIView):
             user.last_login = timezone.now()
             user.set_unusable_password()
             user.save()
-            # print("프로필이미지")
-            # print(user.profileimage)
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
             refresh["nickname"] = user.nickname
@@ -402,16 +467,12 @@ class KakaoLoginView(APIView):
 
 class GoogleLoginView(APIView):
     def post(self, request):
-        # print("google소셜 인가코드 받아서 유저 데이터 저장")
         access_token = request.data["code"]
-        # print(access_token)
         headers = {"Authorization": f"Bearer {access_token}"}
         user_data_request = requests.get(
             "https://www.googleapis.com/oauth2/v2/userinfo", headers=headers
         )
         user_data = user_data_request.json()
-        # print("user_data 딕셔너리 타입")
-        # print(user_data)
 
         email = user_data.get("email")
         nickname = user_data.get("name")
@@ -423,9 +484,6 @@ class GoogleLoginView(APIView):
             ran_str += str(random.choice(string.ascii_letters + str(ran_num)))
 
         username = "google_" + ran_str
-        # print(email)
-        # print(username)
-        # print(image)
         try:
             user = User.objects.get(email=email)
             if user.login_type == "normal":
@@ -459,8 +517,6 @@ class GoogleLoginView(APIView):
             user.last_login = timezone.now()
             user.set_unusable_password()
             user.save()
-            # print("프로필이미지")
-            # print(user)
             refresh = RefreshToken.for_user(user)
             refresh["email"] = user.email
             refresh["nickname"] = user.nickname
@@ -477,13 +533,10 @@ class GoogleLoginView(APIView):
 
 class NaverLoginView(APIView):
     def post(self, request):
-        # print("naver 소셜 인가코드 받아서 유저 데이터 저장")
         client_id = NAVER_API_KEY
         client_secret = NAVER_SECRET_CODE
         code = request.data.get("code")
         state = request.data.get("state")
-        # print(code)
-        # print(state)
         token_url = (
             f"https://nid.naver.com/oauth2.0/token?grant_type=authorization_code"
         )
@@ -506,8 +559,6 @@ class NaverLoginView(APIView):
         )
         user_datajson = user_data_request.json()
         user_data = user_datajson.get("response")
-        # # print("user_data 딕셔너리 타입")
-        # print(user_data)
         email = user_data.get("email")
         nickname = user_data.get("nickname")
         image = user_data.get("profile_image")
@@ -518,9 +569,6 @@ class NaverLoginView(APIView):
             ran_str += str(random.choice(string.ascii_letters + str(ran_num)))
 
         username = "naver_" + ran_str
-        # print(email)
-        # print(username)
-        # print(image)
         try:
             user = User.objects.get(email=email)
             if user.login_type == "normal":
@@ -570,11 +618,9 @@ class NaverLoginView(APIView):
 
 class GithubLoginView(APIView):
     def post(self, request):
-        # print("github 소셜 인가코드 받아서 유저 데이터 저장")
         client_id = GITHUB_API_KEY
         client_secret = GITHUB_SECRET_CODE
         code = request.data.get("code")
-        # print(code)
         redirect_uri = REDIRECT_URI
         token_url = f"https://github.com/login/oauth/access_token"
         token_request = requests.post(
@@ -590,8 +636,6 @@ class GithubLoginView(APIView):
             },
         )
         access_token = token_request.json().get("access_token")
-        # print("accesstoken")
-        # print(access_token)
         # user_data_request = requests.get(
         #     "https://api.github.com/user",
         #     headers={
@@ -599,7 +643,6 @@ class GithubLoginView(APIView):
         #     },
         # )
         # user_datajson = user_data_request.json()
-        # print(user_datajson)
         user_url = "https://api.github.com/user"
         user_email_url = "https://api.github.com/user/emails"
 
@@ -611,7 +654,6 @@ class GithubLoginView(APIView):
             },
         )
         user_data = response.json()
-        # print(user_data)
 
         response = requests.get(
             user_email_url,
@@ -622,7 +664,6 @@ class GithubLoginView(APIView):
         )
 
         user_emails = response.json()
-        # print(user_emails)
 
         user_email = None
 
@@ -640,10 +681,6 @@ class GithubLoginView(APIView):
             ran_str += str(random.choice(string.ascii_letters + str(ran_num)))
 
         username = "github_" + ran_str
-        # print(email)
-        # print(nickname)
-        # print(username)
-        # print(image)
         # user.profileimage = None
         try:
             user = User.objects.get(email=email)

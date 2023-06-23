@@ -296,15 +296,24 @@ class LocationListView(APIView):
     """
 
     def get(self, request):
-        latitude = self.request.query_params.get("latitude", "")
-        longitude = self.request.query_params.get("longitude", "")
-        position = (float(latitude), float(longitude))
+        lat = float(self.request.query_params.get("lat", ""))
+        lon = float(self.request.query_params.get("lon", ""))
+        dist = float(self.request.query_params.get("dist", ""))
+        position = (lat, lon)
         # 필터 조건
         q = Q()
         q.add(
-            Q(coordinate_y__range=(float(latitude) - 0.01, float(latitude) + 0.01))
+            Q(
+                coordinate_y__range=(
+                    lat - 0.01 * dist,
+                    lat + 0.01 * dist,
+                )
+            )
             | Q(
-                coordinate_x__range=(float(longitude) - 0.015, float(longitude) + 0.015)
+                coordinate_x__range=(
+                    lon - 0.015 * dist,
+                    lon + 0.015 * dist,
+                )
             ),
             q.AND,
         )
@@ -315,7 +324,8 @@ class LocationListView(APIView):
         test = [
             na
             for na in near_articles
-            if haversine(position, (na.coordinate_y, na.coordinate_x)) <= 2
+            if (na.article_set.filter(db_status=1).count() != 0)
+            and (haversine(position, (na.coordinate_y, na.coordinate_x))) <= dist
         ]
         serializer = MapSearchSerializer(test, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -354,7 +364,8 @@ class ArticleSearchView(generics.ListAPIView):
                 for a in queryset:
                     taglist = a.taglist_set.all().order_by("-created_at")
                     for b in taglist:
-                        queryset_list.append(b.article)
+                        if b.article.db_status == 1:
+                            queryset_list.append(b.article)
             return queryset_list
         # 지역 검색
         else:
@@ -375,7 +386,9 @@ class ArticleSearchView(generics.ListAPIView):
                     for loc in queryset:
                         location_list.append(loc)
                 for a in list(dict.fromkeys(location_list)):
-                    article_list = a.article_set.all().order_by("-created_at")
+                    article_list = a.article_set.filter(db_status=1).order_by(
+                        "-created_at"
+                    )
                     for b in article_list:
                         queryset_list.append(b)
             return queryset_list
@@ -568,13 +581,10 @@ class ArticleRandomView(generics.ListAPIView):
             return random_article
         # 임의의 태그 선택
         elif self.request.query_params.get("option") == "tag":
-            queryset_list = []
             weekly_tags = WeeklyTags.objects.all()
             tag = weekly_tags[0]
-            taglist = tag.tag.taglist_set.all().order_by("-created_at")
-            for b in taglist:
-                queryset_list.append(b.article)
-            return queryset_list
+            articles = tag.tag.article_set.filter(db_status=1).order_by("-created_at")
+            return articles
 
 
 def get_random_article():
@@ -597,20 +607,23 @@ def get_weekly_tags():
     weekly_tags = WeeklyTags.objects.all()
     queryset = Tag.objects.filter(Q(db_status=1))
     try:
-        if len(weekly_tags) == 7:
+        if weekly_tags.count() == 7:
             weekly_tags[0].delete()
             random_tags = random.choice(list(queryset))
             WeeklyTags.objects.create(tag=random_tags)
-        else:
-            for i in range(7 - len(weekly_tags)):
+        elif weekly_tags.count() < 7:
+            for i in range(7 - weekly_tags.count()):
                 random_tags = random.choice(list(queryset))
                 WeeklyTags.objects.create(tag=random_tags)
+        elif weekly_tags.count() > 7:
+            for i in range(weekly_tags.count() - 7):
+                weekly_tags[0].delete()
     except:
         tag = Tag.objects.create(tag="여행")
         WeeklyTags.objects.create(tag=tag)
 
 
-# get_weekly_tags()
+get_weekly_tags()
 
 scheduler.add_job(get_weekly_tags, "cron", hour=0, id="rand_3")
 
@@ -662,7 +675,6 @@ class ReplyView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, comment_id):
-        print(request.data)
         comment = get_object_or_404(Comment, id=comment_id)
         user = request.user
         serializer = ReplySerializer(data=request.data)

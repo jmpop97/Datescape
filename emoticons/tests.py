@@ -79,9 +79,6 @@ class EmoticonCreateTest(APITestCase):
             content_type=MULTIPART_CONTENT,
             HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
         )
-        # print(response.data)
-        # print('이모티콘',Emoticon.objects.get(id=2))
-        # print('이모티콘 이미지',EmoticonImage.objects.filter(emoticon=Emoticon.objects.get(id=2)))
         self.assertEqual(response.status_code, 200)
 
 
@@ -123,16 +120,13 @@ class EmoticonCRUDTest(APITestCase):
             response = self.client.get(
                 path=url, HTTP_AUTHORIZATION=f"Bearer {self.access_token}"
             )
-            # print('response확인', response.data)
             serializer = EmoticonSerializer(emoticon, context={"user": self.user}).data
-            # print('serializer확인', serializer)
             for key, value in serializer.items():
                 self.assertEqual(response.data[key], value)
                 self.assertEqual(emoticon.title, response.data["title"])
 
     def test_put_emoticon(self):
         """임시저장 이모티콘 수정"""
-        # print("pk확인용", self.emoticon_one.pk)
         response = self.client.put(
             path=reverse("emoticon"),
             data={"emoticon_id": self.emoticon_one.pk, "title": "수정 된 이모티콘"},
@@ -253,7 +247,6 @@ class EmoticonListTest(APITestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
         )
         # for i, a in enumerate(rsp_emoticon_list.data):
-        # print(f"리스트 {i}: id-{a['id']} / 판매중:{a['db_status']}")
 
         self.assertEqual(rsp_emoticon_list.status_code, 200)
 
@@ -321,7 +314,6 @@ class EmoticonTempListTest(APITestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
         )
         # for i, a in enumerate(rsp_emoticon_list.data):
-        # print(f"리스트 {i}: id-{a['id']} / 임시저장:{a['db_status']}")
         self.assertEqual(rsp_emoticon_list.status_code, 200)
 
     def test_emoticon_list_all_superuser(self):
@@ -332,7 +324,6 @@ class EmoticonTempListTest(APITestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.superaccess_token}",
         )
         # for i, a in enumerate(rsp_emoticon_list.data):
-        # print(f"리스트 {i}: id-{a['id']} / 임시저장:{a['db_status']}")
         self.assertEqual(rsp_emoticon_list.status_code, 200)
 
 
@@ -342,5 +333,4 @@ class EmoticonImageTest(APITestCase):
         rsp_emoticon_images = self.client.get(
             path=reverse("emoticon_image"),
         )
-        print("확인:", rsp_emoticon_images.data)
         self.assertEqual(rsp_emoticon_images.status_code, 200)

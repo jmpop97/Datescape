@@ -56,7 +56,9 @@ class Article(CommonModel):
         max_length=256,
     )
     content = models.TextField()
-    main_image = models.ImageField(null=True, blank=True)  # 대표이미지?
+    main_image = models.ImageField(
+        null=True, blank=True, upload_to="article_main"
+    )  # 대표이미지?
     score = models.FloatField(
         null=True,
         blank=True,
@@ -91,7 +93,7 @@ class ArticleImage(CommonModel):
         Article, on_delete=models.CASCADE, related_name="article_images"
     )
     image = models.ImageField(
-        "이미지", upload_to="article", blank=True, null=True
+        "이미지", upload_to="article_multiple_images", blank=True, null=True
     )  # 게시글 이미지
 
 

@@ -37,7 +37,9 @@ urlpatterns = [
     # 타인 유저 프로필
     path("<pk>/profile/", views.UserDetailView.as_view(), name="userprofile"),
     # 비밀번호 수정
-    path("password/change/", views.PasswordChangeView.as_view(), name="passwordchange"),
+    path(
+        "password/change/", views.PasswordChangeView.as_view(), name="password_change"
+    ),
     # 이메일 확인 후 user active
     path(
         "activate/<str:uidb64>/<str:token>",
@@ -45,14 +47,16 @@ urlpatterns = [
         name="useractive",
     ),
     # 비밀번호 재설정(로그인X)
-    path("password/reset/", views.ResetPasswordView.as_view(), name="resetpassword"),
+    path("password/reset/", views.ResetPasswordView.as_view(), name="reset_password"),
     path(
         "reset/<str:uidb64>/<str:token>",
         views.ResetPasswordEmailView.as_view(),
-        name="resetpasswordemail",
+        name="reset_password_email",
     ),
     # 아이디 찾기
-    path("find/id/", views.FindUserIDView.as_view(), name="finduserid"),
+    path("find/id/", views.FindUserIDView.as_view(), name="find_userid"),
+    # 회원가입 이메일 인증 재전송
+    path("resend/email/", views.ResendEmailView.as_view(), name="resend_email"),
     # 소셜로그인
     path("social/", views.SocialUrlView.as_view(), name="social_login"),
     path("kakao-login/", views.KakaoLoginView.as_view(), name="kakao_login"),

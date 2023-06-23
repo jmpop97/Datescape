@@ -30,7 +30,7 @@ class ArticleImageSerializer(serializers.ModelSerializer):
 
 
 class ArticleSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source="user.username")
+    user = serializers.ReadOnlyField(source="user.nickname")
     # username = serializers.SerializerMethodField()
     tags = TagSerializer(many=True, read_only=True)
     jibun_address = serializers.SerializerMethodField()
@@ -112,8 +112,13 @@ class ArticleSerializer(serializers.ModelSerializer):
 class MapSearchSerializer(serializers.ModelSerializer):
     """지도정보 db저장"""
 
-    article_set = ArticleSerializer(many=True, read_only=True)
     score_avg = serializers.SerializerMethodField()
+    articles = serializers.SerializerMethodField()
+
+    def get_articles(self, obj):
+        qs = obj.article_set.filter(db_status=1)
+        serializer = ArticleSerializer(instance=qs, many=True, read_only=True)
+        return serializer.data
 
     def get_score_avg(self, obj):
         avg = obj.article_set.aggregate(Avg("score"))
@@ -127,7 +132,7 @@ class MapSearchSerializer(serializers.ModelSerializer):
             "coordinate_x",
             "coordinate_y",
             "id",
-            "article_set",
+            "articles",
             "score_avg",
         )
 
