@@ -324,7 +324,8 @@ class LocationListView(APIView):
         test = [
             na
             for na in near_articles
-            if haversine(position, (na.coordinate_y, na.coordinate_x)) <= dist
+            if (na.article_set.filter(db_status=1).count() != 0)
+            and (haversine(position, (na.coordinate_y, na.coordinate_x))) <= dist
         ]
         serializer = MapSearchSerializer(test, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -385,7 +386,9 @@ class ArticleSearchView(generics.ListAPIView):
                     for loc in queryset:
                         location_list.append(loc)
                 for a in list(dict.fromkeys(location_list)):
-                    article_list = a.article_set.filter(db_status=1).order_by("-created_at")
+                    article_list = a.article_set.filter(db_status=1).order_by(
+                        "-created_at"
+                    )
                     for b in article_list:
                         queryset_list.append(b)
             return queryset_list
