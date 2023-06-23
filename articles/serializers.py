@@ -30,7 +30,7 @@ class ArticleImageSerializer(serializers.ModelSerializer):
 
 
 class ArticleSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source="user.username")
+    user = serializers.ReadOnlyField(source="user.nickname")
     # username = serializers.SerializerMethodField()
     tags = TagSerializer(many=True, read_only=True)
     jibun_address = serializers.SerializerMethodField()
