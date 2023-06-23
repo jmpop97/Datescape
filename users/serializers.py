@@ -2,16 +2,17 @@ import datetime, random
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import ParseError
-from django.core.mail import EmailMessage
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.conf import settings
 from users.models import User
 from users.tokens import account_activation_token
+from rest_framework_simplejwt.tokens import RefreshToken
 
-
-def message(domain, uidb64, token):
-    return f"아래 링크를 클릭하면 회원가입 인증이 완료됩니다.\n\n회원가입 링크 : http://{domain}/users/activate/{uidb64}/{token}\n\n감사합니다."
+BACK_URL = getattr(settings, "BACK_URL")
+DEFAULT_FROM_EMAIL = getattr(settings, "DEFAULT_FROM_EMAIL")
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -28,16 +29,22 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
 
-        # domain = "localhost:8000"
-        domain = "https://back.datescape.shop/"
-        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
-        token = account_activation_token.make_token(user)
-        message_data = message(domain, uidb64, token)
-
-        mail_title = "DateScape : 이메일 인증을 완료해주세요"
+        html = render_to_string(
+            "register_email.html",
+            {
+                "backend_base_url": BACK_URL,
+                "uidb64": urlsafe_base64_encode(force_bytes(user.id)).encode().decode(),
+                "token": account_activation_token.make_token(user),
+            },
+        )
         to_email = user.email
-        email = EmailMessage(mail_title, message_data, to=[to_email])
-        email.send()
+        send_mail(
+            "DateScape : 비밀번호 초기화 인증 메일입니다!",
+            "_",
+            DEFAULT_FROM_EMAIL,
+            [to_email],
+            html_message=html,
+        )
 
         return user
 
@@ -54,7 +61,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token["nickname"] = user.nickname
         token["login_type"] = user.login_type
         token["is_admin"] = user.is_admin
-        # json_str = json.dumps(user.last_login, default=str)
         token["last_login"] = str(user.last_login)
 
         return token
@@ -81,7 +87,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
         ]
 
 
-# 비밀번호 변경
+# 로그인된 유저 비밀번호 변경
 class PasswordEditSerializer(serializers.ModelSerializer):
     new_password1 = serializers.CharField(write_only=True, required=True)
     new_password2 = serializers.CharField(write_only=True, required=True)
@@ -114,6 +120,7 @@ class PasswordEditSerializer(serializers.ModelSerializer):
 # userID, profileimage 변경
 class ProfileEditSerializer(serializers.ModelSerializer):
     # email = serializers.EmailField(required=False)
+    username = serializers.CharField(required=False)
     nickname = serializers.CharField(required=False)
     # profileimage = serializers.ImageField(required=False)
     new_password1 = serializers.CharField(write_only=True, required=False)
@@ -121,7 +128,13 @@ class ProfileEditSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["nickname", "profileimage", "new_password1", "new_password2"]
+        fields = [
+            "nickname",
+            "username",
+            "profileimage",
+            "new_password1",
+            "new_password2",
+        ]
 
     def update(self, instance, validated_data):
         new_password1 = validated_data.pop("new_password1", None)
