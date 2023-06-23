@@ -85,7 +85,6 @@ class CategoryView(APIView):
         """
         request_datas = requst.data.get("request_datas", [])
         for fix_parent, fix_child in request_datas:
-            # ChildCategory.objects.filter(id__in=del_cs).delete()
             _obj, _ = CategoryName.objects.get_or_create(name=fix_parent[1])
             if int(fix_parent[0]) > 0:
                 fix_p = ParentCategory.objects.get(id=int(fix_parent[0]))
@@ -110,7 +109,7 @@ class CategoryView(APIView):
             ChildCategory.objects.filter(parent_category=int(fix_parent[0])).exclude(
                 id__in=not_del_cs
             ).delete()
-            return Response({"message": "성공"}, status=status.HTTP_200_OK)
+        return Response({"message": "성공"}, status=status.HTTP_200_OK)
 
 
 class ChildCategoryView(APIView):
