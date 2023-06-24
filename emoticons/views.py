@@ -71,6 +71,8 @@ class EmoticonView(APIView):
         input: 이모티콘 제목(title)
         output: 요청 처리에 따라 status 값을 반환
         """
+        if "db_status" in request.data:
+            request.data.pop("db_status")
         if "images" in request.data:
             serializer = EmoticonCreateSerializer(
                 data=request.data,
@@ -97,9 +99,14 @@ class EmoticonView(APIView):
         output: 요청 처리에 따라 status 값을 반환
         """
         if request.user.is_admin == 0:
+            if "db_status" in request.data:
+                request.data.pop("db_status")
             emoticon = get_object_or_404(
                 Emoticon, id=request.data.get("emoticon_id"), db_status=0
             )
+            print(request.data)
+            request.data.pop("db_status")
+            print(request.data)
             """404에러 프론트에서 '판매중으로 수정할 수 없거나 등록되지 않은 이모티콘입니다' 메세지 띄우기"""
             # 프론트 데이터 형식
         else:
@@ -140,7 +147,6 @@ class EmoticonView(APIView):
                         EmoticonImage.objects.create(
                             emoticon=emoticon, image=image_data, size=file_size_data[i]
                         )
-
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
