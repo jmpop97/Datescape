@@ -8,6 +8,31 @@ from emoticons.serializers import (
     EmoticonImageSerializer,
 )
 from emoticons.models import Emoticon, EmoticonImage, UserEmoticonList
+from dsproject import settings
+import requests
+import json
+
+
+# 포트원 토큰 요청
+def getTokenApi(path):
+    API_HOST = "https://api.iamport.kr"
+    url = API_HOST + path
+
+    headers = {"Content-Type": "application/json", "charset": "UTF-8", "Accept": "*/*"}
+    body = {
+        "imp_key": settings.PORTONE_REST_API_KEY,  # REST API Key
+        "imp_secret": settings.PORTONE_REST_API_SECRET,  # REST API Secret
+    }
+    try:
+        response = requests.post(
+            url, headers=headers, data=json.dumps(body, ensure_ascii=False, indent="\t")
+        )
+        return response
+    except Exception as ex:
+        # 포트원 공식문서 사용법 가져온거라 익셉트로 빠지는 경우 위치확인용으로 프린트 남겼습니다.
+        print(
+            "포트원 토큰 요청 에러\n/emoticons/views.py/getTokenApi(path) - 17번째 줄, 또는 사용된 위치에서 에러 발생"
+        )
 
 
 # Create your views here.
@@ -243,8 +268,43 @@ class UserEmoticonListView(APIView):
         emoticon = get_object_or_404(
             Emoticon, id=int(request.data["emoticon_id"]), db_status=1
         )
-        UserEmoticonList.objects.create(sold_emoticon=emoticon, buyer=request.user)
-        return Response({"message": "결제 완료!"}, status=status.HTTP_200_OK)
+        # 포트원 access token
+        res = getTokenApi("/users/getToken")  # API call
+        json_object = json.loads(res.text)  # json 객체로 변환
+        TokenVal = json_object["response"]["access_token"]  # 토큰값 파싱
+
+        # 포트원 결제 조회
+        imp_uid = request.data["imp_uid"]
+        headers = {"Authorization": TokenVal}
+        response = requests.get(
+            f"https://api.iamport.kr/payments/{imp_uid}", headers=headers
+        )
+        if response.status_code == 200:
+            payment_response = response.json()
+            if payment_response["response"]["status"] == "paid":
+                UserEmoticonList.objects.create(
+                    sold_emoticon=emoticon, buyer=request.user
+                )
+                return Response({"message": "결제 완료!"}, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"message": "결제 취소 또는 결제실패"},
+                    status=status.HTTP_402_PAYMENT_REQUIRED,
+                )
+        elif response.status_code == 401:
+            return Response(
+                {"message": "포트원 request 토큰 오류"},
+                status=status.HTTP_402_PAYMENT_REQUIRED,
+            )
+        elif response.status_code == 404:
+            return Response(
+                {"message": "유효하지 않은 imp_uid"}, status=status.HTTP_402_PAYMENT_REQUIRED
+            )
+        else:
+            return Response(
+                {"message": "확인 되지 않는 오류, 포트원 문의 필요"},
+                status=status.HTTP_402_PAYMENT_REQUIRED,
+            )
 
 
 # 기본 이모티콘 저장
