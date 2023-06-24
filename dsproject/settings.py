@@ -48,6 +48,10 @@ GOOGLE_API_KEY = secrets.get("GOOGLE_API_KEY")
 GITHUB_API_KEY = secrets.get("GITHUB_API_KEY")
 GITHUB_SECRET_CODE = secrets.get("GITHUB_SECRET_CODE")
 
+# 포트원
+PORTONE_REST_API_KEY = secrets.get("PORTONE_REST_API_KEY")
+PORTONE_REST_API_SECRET = secrets.get("PORTONE_REST_API_SECRET")
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
