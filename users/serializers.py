@@ -3,6 +3,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import ParseError
 from django.core.mail import send_mail
+from django.core.validators import RegexValidator
 from django.template.loader import render_to_string
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
@@ -16,6 +17,14 @@ DEFAULT_FROM_EMAIL = getattr(settings, "DEFAULT_FROM_EMAIL")
 
 
 class UserSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(required=True, validators=[
+        RegexValidator(
+            regex='^[a-zA-Z0-9]*$',
+            message='아이디는 영문으로 작성해주세요.',
+            code='invalid_username'
+        )
+    ])
+    password = serializers.CharField(required=True, validators=[RegexValidator(r'^(?=.*[\d])(?=.*[a-z])(?=.*[!@#$%^&*()])[\w\d!@#$%^&*()]{8,}$', message='비밀번호는 8자 이상의 영문 소문자와 숫자, 특수문자를 포함하여야 합니다.')])
     class Meta:
         model = User
         fields = "__all__"
@@ -39,7 +48,7 @@ class UserSerializer(serializers.ModelSerializer):
         )
         to_email = user.email
         send_mail(
-            "DateScape : 비밀번호 초기화 인증 메일입니다!",
+            "DateScape : 회원가입 인증 메일입니다!",
             "_",
             DEFAULT_FROM_EMAIL,
             [to_email],
@@ -89,8 +98,8 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
 # 로그인된 유저 비밀번호 변경
 class PasswordEditSerializer(serializers.ModelSerializer):
-    new_password1 = serializers.CharField(write_only=True, required=True)
-    new_password2 = serializers.CharField(write_only=True, required=True)
+    new_password1 = serializers.CharField(write_only=True, required=True, validators=[RegexValidator(r'^(?=.*[\d])(?=.*[a-z])(?=.*[!@#$%^&*()])[\w\d!@#$%^&*()]{8,}$', message='비밀번호는 8자 이상의 영문 소문자와 숫자, 특수문자를 포함하여야 합니다.')])
+    new_password2 = serializers.CharField(write_only=True, required=True, validators=[RegexValidator(r'^(?=.*[\d])(?=.*[a-z])(?=.*[!@#$%^&*()])[\w\d!@#$%^&*()]{8,}$', message='비밀번호는 8자 이상의 영문 소문자와 숫자, 특수문자를 포함하여야 합니다.')])
 
     class Meta:
         model = User
@@ -111,7 +120,7 @@ class PasswordEditSerializer(serializers.ModelSerializer):
         if new_password1 != new_password2:
             raise ValueError
 
-        user.set_password(new_password1)
+        user.set_password(new_password2)
         user.save()
 
         return user
