@@ -1,5 +1,6 @@
 from django.db import models
 from users.models import CommonModel, User
+from alarms.models import Alarm
 from django.urls import reverse
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -77,6 +78,10 @@ class Emoticon(CommonModel):
                 # db_status가 신청상태에서 판매중으로 변경됐을때만 이메일 보내기
                 subject = "(안내) DateScape 이모티콘 상품 등록 완료 안내"
                 send_emoticon_registration_email(self.creator.email, subject, self)
+                # 알림 생성
+                Alarm.objects.create(
+                    target_user=self.creator, type="emoticon", type_id=self.pk
+                )
 
 
 class EmoticonImage(CommonModel):
