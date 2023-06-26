@@ -17,14 +17,26 @@ DEFAULT_FROM_EMAIL = getattr(settings, "DEFAULT_FROM_EMAIL")
 
 
 class UserSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(required=True, validators=[
-        RegexValidator(
-            regex='^[a-zA-Z0-9]*$',
-            message='아이디는 영문으로 작성해주세요.',
-            code='invalid_username'
-        )
-    ])
-    password = serializers.CharField(required=True, validators=[RegexValidator(r'^(?=.*[\d])(?=.*[a-z])(?=.*[!@#$%^&*()])[\w\d!@#$%^&*()]{8,}$', message='비밀번호는 8자 이상의 영문 소문자와 숫자, 특수문자를 포함하여야 합니다.')])
+    username = serializers.CharField(
+        required=True,
+        validators=[
+            RegexValidator(
+                regex="^[a-zA-Z0-9]*$",
+                message="아이디는 영문으로 작성해주세요.",
+                code="invalid_username",
+            )
+        ],
+    )
+    password = serializers.CharField(
+        required=True,
+        validators=[
+            RegexValidator(
+                r"^(?=.*[\d])(?=.*[a-z])(?=.*[!@#$%^&*()])[\w\d!@#$%^&*()]{8,}$",
+                message="비밀번호는 8자 이상의 영문 소문자와 숫자, 특수문자를 포함하여야 합니다.",
+            )
+        ],
+    )
+
     class Meta:
         model = User
         fields = "__all__"
@@ -98,8 +110,26 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
 # 로그인된 유저 비밀번호 변경
 class PasswordEditSerializer(serializers.ModelSerializer):
-    new_password1 = serializers.CharField(write_only=True, required=True, validators=[RegexValidator(r'^(?=.*[\d])(?=.*[a-z])(?=.*[!@#$%^&*()])[\w\d!@#$%^&*()]{8,}$', message='비밀번호는 8자 이상의 영문 소문자와 숫자, 특수문자를 포함하여야 합니다.')])
-    new_password2 = serializers.CharField(write_only=True, required=True, validators=[RegexValidator(r'^(?=.*[\d])(?=.*[a-z])(?=.*[!@#$%^&*()])[\w\d!@#$%^&*()]{8,}$', message='비밀번호는 8자 이상의 영문 소문자와 숫자, 특수문자를 포함하여야 합니다.')])
+    new_password1 = serializers.CharField(
+        write_only=True,
+        required=True,
+        validators=[
+            RegexValidator(
+                r"^(?=.*[\d])(?=.*[a-z])(?=.*[!@#$%^&*()])[\w\d!@#$%^&*()]{8,}$",
+                message="비밀번호는 8자 이상의 영문 소문자와 숫자, 특수문자를 포함하여야 합니다.",
+            )
+        ],
+    )
+    new_password2 = serializers.CharField(
+        write_only=True,
+        required=True,
+        validators=[
+            RegexValidator(
+                r"^(?=.*[\d])(?=.*[a-z])(?=.*[!@#$%^&*()])[\w\d!@#$%^&*()]{8,}$",
+                message="비밀번호는 8자 이상의 영문 소문자와 숫자, 특수문자를 포함하여야 합니다.",
+            )
+        ],
+    )
 
     class Meta:
         model = User
