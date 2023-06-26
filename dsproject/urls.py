@@ -25,6 +25,7 @@ urlpatterns = [
     path("emoticons/", include("emoticons.urls")),
     path("articles/", include("articles.urls")),
     path("reports/", include("reports.urls")),
+    path("alarms/", include("alarms.urls")),
 ]
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
