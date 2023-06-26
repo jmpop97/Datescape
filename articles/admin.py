@@ -26,7 +26,7 @@ class TagListAdmin(admin.ModelAdmin):
 
 
 class ArticlesAdmin(admin.ModelAdmin):
-    list_display = ["id", "title","user", "content", "score", "db_status"]
+    list_display = ["id", "title", "user", "content", "score", "db_status"]
     list_filter = [
         "db_status",
         "created_at",
@@ -47,24 +47,29 @@ class ArticlesAdmin(admin.ModelAdmin):
     ]
     extra = 0
     list_per_page = 10
-    actions = ['make_active', 'make_delete']
-    
+    actions = ["make_active", "make_delete"]
+
     # admin action 추가
     def make_active(self, request, queryset):
-        updated_count = queryset.update(db_status=1) #queryset.update
-        self.message_user(request, '{}건의 항목을 Active 상태로 변경'.format(updated_count)) #django message framework 활용
-    make_active.short_description = '지정 항목을 Active 상태로 변경'
+        updated_count = queryset.update(db_status=1)  # queryset.update
+        self.message_user(
+            request, "{}건의 항목을 Active 상태로 변경".format(updated_count)
+        )  # django message framework 활용
+
+    make_active.short_description = "지정 항목을 Active 상태로 변경"
 
     def make_delete(self, request, queryset):
-        updated_count = queryset.update(db_status=2) #queryset.update
-        self.message_user(request, '{}건의 항목을 Delete 상태로 변경'.format(updated_count)) #django message framework 활용
-    make_delete.short_description = '지정 항목을 Delete 상태로 변경'
+        updated_count = queryset.update(db_status=2)  # queryset.update
+        self.message_user(
+            request, "{}건의 항목을 Delete 상태로 변경".format(updated_count)
+        )  # django message framework 활용
 
+    make_delete.short_description = "지정 항목을 Delete 상태로 변경"
 
 
 class CommentAdmin(CommonModelAdmin):
     fields = ("article", "writer", "comment", "use_emoticon")
-    list_display = ("id","article", "writer", "comment", "use_emoticon")
+    list_display = ("id", "article", "writer", "comment", "use_emoticon")
     list_display_links = [
         "id",
         "article",
@@ -94,32 +99,45 @@ class BookMarkAdmin(CommonModelAdmin):
 class ReplyAdmin(CommonModelAdmin):
     fields = ("writer", "comment", "content")
     list_display = ("writer", "comment", "content")
-    list_display_links = [
-        "writer",
-        "comment",
-        "content"
-    ]
-    
-    
+    list_display_links = ["writer", "comment", "content"]
+
+
 class WeeklyTagsAdmin(CommonModelAdmin):
-    fields = ("id","tag",)
-    list_display = ("id","tag",)
+    fields = (
+        "id",
+        "tag",
+    )
+    list_display = (
+        "id",
+        "tag",
+    )
     readonly_fields = ("id",)
     list_display_links = ["id", "tag"]
-    
-    
+
+
 class ArticleImageAdmin(CommonModelAdmin):
-    fields = ("id","article", "image",)
-    list_display = ("id","article", "image",)
+    fields = (
+        "id",
+        "article",
+        "image",
+    )
+    list_display = (
+        "id",
+        "article",
+        "image",
+    )
     readonly_fields = ("id",)
     list_display_links = [
         "id",
         "article",
     ]
-    
-    
+
+
 class MapDataBaseAdmin(admin.ModelAdmin):
-    list_display = ("id","jibun_address",)
+    list_display = (
+        "id",
+        "jibun_address",
+    )
     list_display_links = [
         "id",
         "jibun_address",
@@ -138,10 +156,9 @@ class TagAdmin(CommonModelAdmin):
     list_per_page = 10
 
 
-
 admin.site.register(Tag, TagAdmin)
-admin.site.register(WeeklyTags,  WeeklyTagsAdmin)
-admin.site.register(MapDataBase,MapDataBaseAdmin)
+admin.site.register(WeeklyTags, WeeklyTagsAdmin)
+admin.site.register(MapDataBase, MapDataBaseAdmin)
 admin.site.register(TagList, TagListAdmin)
 admin.site.register(Article, ArticlesAdmin)
 admin.site.register(ArticleImage, ArticleImageAdmin)

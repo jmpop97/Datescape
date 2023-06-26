@@ -15,15 +15,23 @@ class CommonModelAdmin(admin.ModelAdmin):
     list_display = ()
     readonly_fields = ()
     list_filter = ()
-    common_list_display = ( "db_status","created_at", "updated_at",)
-    common_fields = ("db_status", "created_at", "updated_at",)
+    common_list_display = (
+        "db_status",
+        "created_at",
+        "updated_at",
+    )
+    common_fields = (
+        "db_status",
+        "created_at",
+        "updated_at",
+    )
     common_readonly_fields = ("created_at", "updated_at")
     common_list_filter = (
         "db_status",
         "created_at",
     )
     list_per_page = 10
-    actions = ['make_active', 'make_delete']
+    actions = ["make_active", "make_delete"]
 
     def __init__(self, model: type, admin_site):
         self.fields += self.common_fields
@@ -31,17 +39,23 @@ class CommonModelAdmin(admin.ModelAdmin):
         self.readonly_fields += self.common_readonly_fields
         self.list_filter += self.common_list_filter
         super().__init__(model, admin_site)
-    
+
     # admin action 추가
     def make_active(self, request, queryset):
-        updated_count = queryset.update(db_status=1) #queryset.update
-        self.message_user(request, '{}건의 항목을 Active 상태로 변경'.format(updated_count)) #django message framework 활용
-    make_active.short_description = '지정 항목을 Active 상태로 변경'
+        updated_count = queryset.update(db_status=1)  # queryset.update
+        self.message_user(
+            request, "{}건의 항목을 Active 상태로 변경".format(updated_count)
+        )  # django message framework 활용
+
+    make_active.short_description = "지정 항목을 Active 상태로 변경"
 
     def make_delete(self, request, queryset):
-        updated_count = queryset.update(db_status=2) #queryset.update
-        self.message_user(request, '{}건의 항목을 Delete 상태로 변경'.format(updated_count)) #django message framework 활용
-    make_delete.short_description = '지정 항목을 Delete 상태로 변경'
+        updated_count = queryset.update(db_status=2)  # queryset.update
+        self.message_user(
+            request, "{}건의 항목을 Delete 상태로 변경".format(updated_count)
+        )  # django message framework 활용
+
+    make_delete.short_description = "지정 항목을 Delete 상태로 변경"
 
 
 class UserCreationForm(forms.ModelForm):
