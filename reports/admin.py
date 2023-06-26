@@ -11,25 +11,52 @@ from users.admin import CommonModelAdmin
 
 
 # Register your models here.
-class ReportUserAdmin(CommonModelAdmin):
-    fields = ("reporter", "report_user", "report_type", "comment")
-    list_display = ("id", "reporter", "report_user", "report_type")
-    readonly_fields = ("reporter", "report_user")
-    list_filter = ("report_user", "report_type")
+class ReportUserAdmin(admin.ModelAdmin):
+    fields = ("reporter", "report_user", "report_type", "comment","db_status","created_at", "updated_at",)
+    list_display = ("id", "reporter", "report_user", "report_type","db_status","created_at", "updated_at",)
+    readonly_fields = ("reporter", "report_user", "created_at", "updated_at")
+    list_filter = ("report_user", "report_type","db_status","created_at",)
+    list_display_links = ["id","reporter", "report_user"]
+    list_per_page = 10
+    actions = ['make_solved']
+    
+    # admin action 추가
+    def make_solved(self, request, queryset):
+        updated_count = queryset.update(db_status=2) #queryset.update
+        self.message_user(request, '{}건의 항목을 해결됨 상태로 변경'.format(updated_count)) #django message framework 활용
+    make_solved.short_description = '지정 항목을 해결됨 상태로 변경'
 
 
-class ReportArticleAdmin(CommonModelAdmin):
-    fields = ("reporter", "report_article", "report_type", "comment")
-    list_display = ("id", "reporter", "report_article", "report_type")
-    readonly_fields = ("reporter", "report_article")
-    list_filter = ("report_article", "report_type")
+class ReportArticleAdmin(admin.ModelAdmin):
+    fields = ("reporter", "report_article", "report_type", "comment", "db_status","created_at", "updated_at",)
+    list_display = ("id", "reporter", "report_article", "report_type", "db_status","created_at", "updated_at",)
+    readonly_fields = ("reporter", "report_article","created_at", "updated_at")
+    list_filter = ("report_article", "report_type","db_status","created_at",)
+    list_display_links = ["id","reporter", "report_article"]
+    list_per_page = 10
+    actions = ['make_solved']
+    
+    # admin action 추가
+    def make_solved(self, request, queryset):
+        updated_count = queryset.update(db_status=2) #queryset.update
+        self.message_user(request, '{}건의 항목을 해결됨 상태로 변경'.format(updated_count)) #django message framework 활용
+    make_solved.short_description = '지정 항목을 해결됨 상태로 변경'
 
 
-class ReportCommentAdmin(CommonModelAdmin):
-    fields = ("reporter", "report_comment", "report_type", "comment")
-    list_display = ("id", "reporter", "report_comment", "report_type")
-    readonly_fields = ("reporter", "report_comment")
-    list_filter = ("report_comment", "report_type")
+class ReportCommentAdmin(admin.ModelAdmin):
+    fields = ("reporter", "report_comment", "report_type", "comment",  "db_status","created_at", "updated_at",)
+    list_display = ("id", "reporter", "report_comment", "report_type",  "db_status","created_at", "updated_at",)
+    readonly_fields = ("reporter", "report_comment","created_at", "updated_at")
+    list_filter = ("report_comment", "report_type","db_status","created_at",)
+    list_display_links = ["id","reporter", "report_comment"]
+    list_per_page = 10
+    actions = ['make_solved']
+    
+    # admin action 추가
+    def make_solved(self, request, queryset):
+        updated_count = queryset.update(db_status=2) #queryset.update
+        self.message_user(request, '{}건의 항목을 해결됨 상태로 변경'.format(updated_count)) #django message framework 활용
+    make_solved.short_description = '지정 항목을 해결됨 상태로 변경'
 
 
 class ChildCategoryAdmin(CommonModelAdmin):

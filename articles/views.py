@@ -592,6 +592,11 @@ class ArticleRandomView(generics.ListAPIView):
             weekly_tags = WeeklyTags.objects.all()
             tag = weekly_tags[0]
             articles = tag.tag.article_set.filter(db_status=1).order_by("-created_at")
+            if articles.count() == 0:
+                get_weekly_tags()
+                weekly_tags = WeeklyTags.objects.all()
+                tag = weekly_tags[0]
+                articles = tag.tag.article_set.filter(db_status=1).order_by("-created_at")
             return articles
 
 
