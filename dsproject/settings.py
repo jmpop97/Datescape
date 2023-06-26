@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     "articles",
     "reports",
     "emoticons",
+    "alarms",
 ]
 
 MIDDLEWARE = [
