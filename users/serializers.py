@@ -29,6 +29,7 @@ class UserSerializer(serializers.ModelSerializer):
     )
     password = serializers.CharField(
         required=True,
+        write_only=True,
         validators=[
             RegexValidator(
                 r"^(?=.*[\d])(?=.*[a-z])(?=.*[!@#$%^&*()])[\w\d!@#$%^&*()]{8,}$",

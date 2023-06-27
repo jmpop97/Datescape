@@ -142,13 +142,18 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 # 로그인된 유저 확인하기
-class mockView(APIView):
+class isLoginUserView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        return Response(
-            {"로그인된 유저이름 /// " + f"{request.user.email}"}, status=status.HTTP_200_OK
-        )
+        user = request.user
+        if user:
+            serializer = UserSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        # return Response(
+        #     {"message": f"${serializer.errors}"}, status=status.HTTP_401_UNAUTHORIZED
+        # )
+        return Response({"로그인되지 않았습니다. 확인해주세요."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserListView(APIView):
