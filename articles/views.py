@@ -12,6 +12,7 @@ from articles.serializers import (
     MapSearchSerializer,
     BookMarkSerializer,
     ReplySerializer,
+    TagSerializer,
 )
 from articles.models import (
     Article,
@@ -643,6 +644,17 @@ get_weekly_tags()
 scheduler.add_job(get_weekly_tags, "cron", hour=0, id="rand_3")
 
 scheduler.start()
+
+
+class WeeklyTagsView(APIView):
+    """
+    주간 태그를 보내주는 뷰
+    """
+
+    def get(self, request):
+        weekly_tags = WeeklyTags.objects.all()
+        serializer = TagSerializer(weekly_tags, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class BookMarkView(APIView):
