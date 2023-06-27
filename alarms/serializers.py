@@ -9,23 +9,28 @@ class AlarmSerializer(serializers.ModelSerializer):
     emoticon = serializers.SerializerMethodField()
 
     def get_article(self, alarm):
-        if alarm.type == "comment":
-            comment = Comment.objects.get(id=alarm.type_id)
-            return {"id": comment.article.id, "title": comment.article.title}
-        if alarm.type == "reply":
-            reply = Reply.objects.get(id=alarm.type_id)
-            return {
-                "id": reply.comment.article.id,
-                "title": reply.comment.article.title,
-            }
-        else:
+        try:
+            if alarm.type == "comment":
+                comment = Comment.objects.get(id=alarm.type_id)
+                return {"id": comment.article.id, "title": comment.article.title}
+            if alarm.type == "reply":
+                reply = Reply.objects.get(id=alarm.type_id)
+                return {
+                    "id": reply.comment.article.id,
+                    "title": reply.comment.article.title,
+                }
+        except:
+            alarm.delete()
             return None
 
     def get_emoticon(self, alarm):
-        if alarm.type == "emoticon":
-            emoticon = Emoticon.objects.get(id=alarm.type_id)
-            return {"id": emoticon.id, "title": emoticon.title}
-        else:
+        try:
+            if alarm.type == "emoticon":
+                print("--------------------: ", alarm.type_id)
+                emoticon = Emoticon.objects.get(id=alarm.type_id)
+                return {"id": emoticon.id, "title": emoticon.title}
+        except:
+            alarm.delete()
             return None
 
     class Meta:
