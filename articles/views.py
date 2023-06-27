@@ -77,18 +77,24 @@ class ArticleView(APIView, PaginationHandler):
 
     def get(self, request):
         score = request.GET.get("score")
-        queryset = Article.objects.filter(db_status=1)
+        print(score)
+        try:
+            score_range = score.split(",")
+        except:
+            pass
+        queryset = Article.objects.filter(db_status=1).order_by("-created_at")
         if score:
-            queryset = queryset.filter(score=score)
-        articles = queryset.order_by("-score", "-created_at")
+            queryset = queryset.filter(
+                score__range=[int(score_range[0]), int(score_range[1])]
+            )
 
-        page = self.paginate_queryset(articles)
+        page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_paginated_response(
                 ArticleSerializer(page, many=True).data
             )
         else:
-            serializer = ArticleSerializer(articles, many=True)
+            serializer = ArticleSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
