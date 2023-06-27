@@ -98,61 +98,73 @@ class EmoticonView(APIView):
         input: 수정하고자 하는 이모티콘 id, 제목, 이미지
         output: 요청 처리에 따라 status 값을 반환
         """
+        if "creator" in request.data:
+            request.data.pop("creator")
+
         if request.user.is_admin == 0:
             if "db_status" in request.data:
                 request.data.pop("db_status")
             emoticon = get_object_or_404(
                 Emoticon, id=request.data.get("emoticon_id"), db_status=0
             )
-            print(request.data)
             request.data.pop("db_status")
-            print(request.data)
             """404에러 프론트에서 '판매중으로 수정할 수 없거나 등록되지 않은 이모티콘입니다' 메세지 띄우기"""
             # 프론트 데이터 형식
         else:
             emoticon = get_object_or_404(Emoticon, id=request.data.get("emoticon_id"))
-        remove_ids = request.data.get("remove_images")
-        if remove_ids:
-            ids_list = remove_ids.split(",")
-        else:
-            ids_list = []
 
-        if (request.user == emoticon.creator) or (request.user.is_admin == 1):
-            if "images" in request.data:
-                serializer = EmoticonSerializer(
-                    emoticon,
-                    data=request.data,
-                    context={
-                        "images": request.data.getlist("images"),
-                        "file_size": request.data.getlist("file_size"),
-                    },
+        if emoticon.db_status == 0:
+            remove_ids = request.data.get("remove_images")
+            if remove_ids:
+                ids_list = remove_ids.split(",")
+            else:
+                ids_list = []
+
+            if (request.user == emoticon.creator) or (request.user.is_admin == 1):
+                if "images" in request.data:
+                    serializer = EmoticonSerializer(
+                        emoticon,
+                        data=request.data,
+                        context={
+                            "images": request.data.getlist("images"),
+                            "file_size": request.data.getlist("file_size"),
+                        },
+                    )
+                else:
+                    serializer = EmoticonSerializer(emoticon, data=request.data)
+
+                if serializer.is_valid():
+                    serializer.save()
+                    # 제거할 이미지가 있으면 제거해주는 코드
+                    if ids_list != None:
+                        for id in ids_list:
+                            k = EmoticonImage.objects.get(id=id)
+                            k.db_status = 2
+                            k.save()
+
+                    # 이미지 업로드시 생성, 이모티콘에 추가
+                    images_data = serializer.context.get("images", None)
+                    file_size_data = serializer.context.get("file_size", None)
+                    if images_data:
+                        for i, image_data in enumerate(images_data):
+                            EmoticonImage.objects.create(
+                                emoticon=emoticon,
+                                image=image_data,
+                                size=file_size_data[i],
+                            )
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                else:
+                    return Response(
+                        serializer.errors, status=status.HTTP_400_BAD_REQUEST
+                    )
+            else:
+                return Response(
+                    {"message": "수정 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN
                 )
-            else:
-                serializer = EmoticonSerializer(emoticon, data=request.data)
-
-            if serializer.is_valid():
-                serializer.save()
-                # 제거할 이미지가 있으면 제거해주는 코드
-                if ids_list != None:
-                    for id in ids_list:
-                        k = EmoticonImage.objects.get(id=id)
-                        k.db_status = 2
-                        k.save()
-
-                # 이미지 업로드시 생성, 이모티콘에 추가
-                images_data = serializer.context.get("images", None)
-                file_size_data = serializer.context.get("file_size", None)
-                if images_data:
-                    for i, image_data in enumerate(images_data):
-                        EmoticonImage.objects.create(
-                            emoticon=emoticon, image=image_data, size=file_size_data[i]
-                        )
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response(
-                {"message": "수정 권한이 없습니다."}, status=status.HTTP_403_FORBIDDEN
+                {"message": "상품등록 이전 상태일때만 수정이 가능합니다."},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
     def delete(self, request):
@@ -376,6 +388,11 @@ class SoldEmoticonCountView(APIView):
         누적 판매량 조회(관리자만 조회 가능)
         판매자 지급금 계산을 위한 판매량 조회
         """
-        emoticon = get_object_or_404(Emoticon, id=emoticon_id)
-        serializer = EmoticonSerializer(emoticon, context={"user": request.user})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if request.user.is_admin == 1:
+            emoticon = get_object_or_404(Emoticon, id=emoticon_id)
+            serializer = EmoticonSerializer(emoticon, context={"user": request.user})
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {"message": "관리자만 접근 가능합니다!"}, status=status.HTTP_403_FORBIDDEN
+            )
