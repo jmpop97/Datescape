@@ -48,6 +48,10 @@ GOOGLE_API_KEY = secrets.get("GOOGLE_API_KEY")
 GITHUB_API_KEY = secrets.get("GITHUB_API_KEY")
 GITHUB_SECRET_CODE = secrets.get("GITHUB_SECRET_CODE")
 
+# 포트원
+PORTONE_REST_API_KEY = secrets.get("PORTONE_REST_API_KEY")
+PORTONE_REST_API_SECRET = secrets.get("PORTONE_REST_API_SECRET")
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -66,6 +70,7 @@ INSTALLED_APPS = [
     # jwt 인증
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     # 프로필 사진 수정시 이전에 저장된 사진 DB에서 삭제 패키지
     "django_cleanup.apps.CleanupConfig",
     "corsheaders",
@@ -73,6 +78,7 @@ INSTALLED_APPS = [
     "articles",
     "reports",
     "emoticons",
+    "alarms",
 ]
 
 MIDDLEWARE = [
@@ -174,10 +180,10 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=1000),
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": False,
-    "BLACKLIST_AFTER_ROTATION": False,
+    "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": True,
     "ALGORITHM": "HS256",
     "VERIFYING_KEY": "",

@@ -142,13 +142,18 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 # 로그인된 유저 확인하기
-class mockView(APIView):
+class isLoginUserView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        return Response(
-            {"로그인된 유저이름 /// " + f"{request.user.email}"}, status=status.HTTP_200_OK
-        )
+        user = request.user
+        if user:
+            serializer = UserSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        # return Response(
+        #     {"message": f"${serializer.errors}"}, status=status.HTTP_401_UNAUTHORIZED
+        # )
+        return Response({"로그인되지 않았습니다. 확인해주세요."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserListView(APIView):
@@ -169,8 +174,7 @@ class UserDetailView(APIView):
     input: user의 pk
     output: email, username, profileimage
 
-    추가구현필요기능-follow,following,bookmark,gpsmap
-    연동필요-mycomment, myarticle, ??
+    추가구현필요기능-follow,following
     """
 
     def get(self, request, pk):
@@ -251,10 +255,12 @@ class ResetPasswordView(APIView):
             )
 
     def put(self, request):
-        new_password1 = request.data.get("new_password2")
+        new_password1 = request.data.get("new_password1")
         new_password2 = request.data.get("new_password2")
         user_id = request.data.get("user_id")
-        print(user_id)
+
+        user = User.objects.get(id=user_id)
+
         try:
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
@@ -269,9 +275,19 @@ class ResetPasswordView(APIView):
                 "비밀번호가 일치하지 않습니다. 다시 확인해주세요!", status=status.HTTP_400_BAD_REQUEST
             )
 
-        user.set_password(new_password2)
-        user.save()
-        return Response({"message": "비밀번호 재설정이 완료되었습니다!"})
+        serializer = PasswordEditSerializer(user, data=request.data)
+        if serializer.is_valid():
+            # print(serializer.data)
+            serializer.save()
+
+            # user.set_password(new_password2)
+            # user.save()
+            return JsonResponse({"message": "비밀번호 재설정이 완료되었습니다!"})
+        else:
+            return Response(
+                {"message": f"${serializer.errors}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 # 일반회원 유저만 로그인중일때 비번 변경

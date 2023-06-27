@@ -12,6 +12,7 @@ from articles.serializers import (
     MapSearchSerializer,
     BookMarkSerializer,
     ReplySerializer,
+    TagSerializer,
 )
 from articles.models import (
     Article,
@@ -25,6 +26,7 @@ from articles.models import (
     BookMark,
     Reply,
 )
+from alarms.models import Alarm
 from dsproject import settings
 from django.db.models import Q
 from haversine import haversine, Unit
@@ -75,18 +77,24 @@ class ArticleView(APIView, PaginationHandler):
 
     def get(self, request):
         score = request.GET.get("score")
-        queryset = Article.objects.filter(db_status=1)
+        print(score)
+        try:
+            score_range = score.split(",")
+        except:
+            pass
+        queryset = Article.objects.filter(db_status=1).order_by("-created_at")
         if score:
-            queryset = queryset.filter(score=score)
-        articles = queryset.order_by("-score", "-created_at")
+            queryset = queryset.filter(
+                score__range=[int(score_range[0]), int(score_range[1])]
+            )
 
-        page = self.paginate_queryset(articles)
+        page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_paginated_response(
                 ArticleSerializer(page, many=True).data
             )
         else:
-            serializer = ArticleSerializer(articles, many=True)
+            serializer = ArticleSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
@@ -344,8 +352,10 @@ class ArticleSearchView(generics.ListAPIView):
 
     def get_queryset(self):
         search = self.request.query_params.get("search")
+        option = self.request.query_params.get("option")
+        queryset_list = []
         # 글 검색
-        if self.request.query_params.get("option") == "article":
+        if option == "article" or option == "all":
             queryset = Article.objects.filter(db_status=1)
             if search is not None:
                 queryset = (
@@ -355,10 +365,10 @@ class ArticleSearchView(generics.ListAPIView):
                     .distinct()
                     .order_by("-created_at")
                 )
-            return queryset
+                for a in queryset:
+                    queryset_list.append(a)
         # 태그 검색
-        elif self.request.query_params.get("option") == "tag":
-            queryset_list = []
+        if option == "tag" or option == "all":
             queryset = Tag.objects.filter(Q(db_status=1) & Q(tag__icontains=search))
             if search is not None:
                 for a in queryset:
@@ -366,12 +376,10 @@ class ArticleSearchView(generics.ListAPIView):
                     for b in taglist:
                         if b.article.db_status == 1:
                             queryset_list.append(b.article)
-            return queryset_list
         # 지역 검색
-        else:
+        if option == "location" or option == "all":
             search_list = search.split(" ")
             location_list = []
-            queryset_list = []
             queryset = MapDataBase.objects.filter(db_status=1)
             if search is not None:
                 for location in search_list:
@@ -391,7 +399,12 @@ class ArticleSearchView(generics.ListAPIView):
                     )
                     for b in article_list:
                         queryset_list.append(b)
-            return queryset_list
+        # 중복 검색 값 제거
+        result = []
+        for i in queryset_list:
+            if i not in result:
+                result.append(i)
+        return result
 
 
 class LocationArticlesView(generics.ListAPIView):
@@ -450,6 +463,13 @@ class CommentView(APIView):
         serializer = CommentCreateSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(writer=request.user, article=article)
+            # 알림 생성
+            if request.user != article.user:  # 댓글 작성자와 게시글 주인이 다를때만 알림 생성
+                Alarm.objects.create(
+                    target_user=article.user,
+                    type="comment",
+                    type_id=serializer.data["id"],
+                )
             return Response(
                 CommentSerializer(Comment.objects.get(id=serializer.data["id"])).data,
                 status=status.HTTP_200_OK,
@@ -584,6 +604,13 @@ class ArticleRandomView(generics.ListAPIView):
             weekly_tags = WeeklyTags.objects.all()
             tag = weekly_tags[0]
             articles = tag.tag.article_set.filter(db_status=1).order_by("-created_at")
+            if articles.count() == 0:
+                get_weekly_tags()
+                weekly_tags = WeeklyTags.objects.all()
+                tag = weekly_tags[0]
+                articles = tag.tag.article_set.filter(db_status=1).order_by(
+                    "-created_at"
+                )
             return articles
 
 
@@ -623,11 +650,24 @@ def get_weekly_tags():
         WeeklyTags.objects.create(tag=tag)
 
 
-get_weekly_tags()
-
+try:
+    get_weekly_tags()
+except:
+    pass
 scheduler.add_job(get_weekly_tags, "cron", hour=0, id="rand_3")
 
 scheduler.start()
+
+
+class WeeklyTagsView(APIView):
+    """
+    주간 태그를 보내주는 뷰
+    """
+
+    def get(self, request):
+        weekly_tags = WeeklyTags.objects.all()
+        serializer = TagSerializer(weekly_tags, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class BookMarkView(APIView):
@@ -680,6 +720,13 @@ class ReplyView(APIView):
         serializer = ReplySerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(comment=comment, writer=user)
+            # 알림 생성
+            if request.user != comment.writer:  # 대댓글 작성자와 댓글 주인이 다를때만 알림 생성
+                Alarm.objects.create(
+                    target_user=comment.writer,
+                    type="reply",
+                    type_id=serializer.data["id"],
+                )
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST)

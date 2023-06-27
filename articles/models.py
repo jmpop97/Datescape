@@ -4,6 +4,13 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from users.models import CommonModel, User
 from emoticons.models import EmoticonImage
 from django.urls import reverse
+import os
+
+
+# 이미지 파일 저장 경로
+def upload_to_images(instance, filename):
+    upload_to = f"article_images/{instance}"
+    return os.path.join(upload_to, filename)
 
 
 class MapDataBase(CommonModel):
@@ -57,7 +64,7 @@ class Article(CommonModel):
     )
     content = models.TextField()
     main_image = models.ImageField(
-        null=True, blank=True, upload_to="article_main"
+        null=True, blank=True, upload_to=upload_to_images
     )  # 대표이미지?
     score = models.FloatField(
         null=True,
@@ -93,8 +100,11 @@ class ArticleImage(CommonModel):
         Article, on_delete=models.CASCADE, related_name="article_images"
     )
     image = models.ImageField(
-        "이미지", upload_to="article_multiple_images", blank=True, null=True
+        "이미지", upload_to=upload_to_images, blank=True, null=True
     )  # 게시글 이미지
+
+    def __str__(self):
+        return self.article.title
 
 
 class TagList(CommonModel):

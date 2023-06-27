@@ -21,4 +21,5 @@ urlpatterns = [
     ),  # 댓글 좋아요
     path("bookmark/", views.BookMarkView.as_view(), name="bookmark"),  # 게시글 북마크
     path("<int:comment_id>/replys/", views.ReplyView.as_view(), name="reply"),  # 대댓글
+    path("weekly-tags/", views.WeeklyTagsView.as_view(), name="weekly_tags"),
 ]
