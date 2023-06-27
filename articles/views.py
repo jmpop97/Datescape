@@ -650,8 +650,10 @@ def get_weekly_tags():
         WeeklyTags.objects.create(tag=tag)
 
 
-get_weekly_tags()
-
+try:
+    get_weekly_tags()
+except:
+    pass
 scheduler.add_job(get_weekly_tags, "cron", hour=0, id="rand_3")
 
 scheduler.start()

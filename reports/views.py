@@ -77,38 +77,43 @@ class CategoryView(APIView):
         except:
             return Response({"message": "fail"}, status=status.HTTP_400_BAD_REQUEST)
 
-    def post(self, requst):
+    def post(self, request):
         """0:추가
         양수:수정
         [부모수정,자식수정]
         """
-        request_datas = requst.data.get("request_datas", [])
-        for fix_parent, fix_child in request_datas:
-            _obj, _ = CategoryName.objects.get_or_create(name=fix_parent[1])
-            if int(fix_parent[0]) > 0:
-                fix_p = ParentCategory.objects.get(id=int(fix_parent[0]))
-            else:
-                fix_p = ParentCategory()
-            fix_p.name = _obj
-            fix_p.save()
-            not_del_cs = []
-            for i, [fix_id, fix_string, fix_down] in enumerate(fix_child):
-                fix_id = int(fix_id)
-                _obj, _ = CategoryName.objects.get_or_create(name=fix_string)
-                if fix_id > 0:
-                    fix_c = ChildCategory.objects.get(id=fix_id)
+        if request.user.is_admin:
+            request_datas = request.data.get("request_datas", [])
+            for fix_parent, fix_child in request_datas:
+                _obj, _ = CategoryName.objects.get_or_create(name=fix_parent[1])
+                if int(fix_parent[0]) > 0:
+                    fix_p = ParentCategory.objects.get(id=int(fix_parent[0]))
                 else:
-                    fix_c = ChildCategory()
-                fix_c.parent_category = fix_p
-                fix_c.category = _obj
-                fix_c.down_list_num = fix_down
-                fix_c.riority = i
-                fix_c.save()
-                not_del_cs += [fix_c.id]
-            ChildCategory.objects.filter(parent_category=int(fix_parent[0])).exclude(
-                id__in=not_del_cs
-            ).delete()
-        return Response({"message": "성공"}, status=status.HTTP_200_OK)
+                    fix_p = ParentCategory()
+                fix_p.name = _obj
+                fix_p.save()
+                not_del_cs = []
+                for i, [fix_id, fix_string, fix_down] in enumerate(fix_child):
+                    fix_id = int(fix_id)
+                    _obj, _ = CategoryName.objects.get_or_create(name=fix_string)
+                    if fix_id > 0:
+                        fix_c = ChildCategory.objects.get(id=fix_id)
+                    else:
+                        fix_c = ChildCategory()
+                    fix_c.parent_category = fix_p
+                    fix_c.category = _obj
+                    fix_c.down_list_num = fix_down
+                    fix_c.riority = i
+                    fix_c.save()
+                    not_del_cs += [fix_c.id]
+                ChildCategory.objects.filter(
+                    parent_category=int(fix_parent[0])
+                ).exclude(id__in=not_del_cs).delete()
+            return Response({"message": "성공"}, status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {"message": "권한이 없습니다."}, status=status.HTTP_401_UNAUTHORIZED
+            )
 
 
 class ChildCategoryView(APIView):
