@@ -19,10 +19,12 @@ class AlarmDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        usread_alarms = Alarm.objects.filter(target_user=request.user, db_status=1)
-        all_alarms = Alarm.objects.all().order_by("-created_at")
+        unread_alarms = Alarm.objects.filter(target_user=request.user, db_status=1)
+        all_alarms = Alarm.objects.filter(target_user=request.user).order_by(
+            "-created_at"
+        )
         serializer_data = AlarmSerializer(all_alarms, many=True).data
-        for a in usread_alarms:
+        for a in unread_alarms:
             a.db_status = 2
             a.save()
         return Response(serializer_data, status=status.HTTP_200_OK)

@@ -352,8 +352,10 @@ class ArticleSearchView(generics.ListAPIView):
 
     def get_queryset(self):
         search = self.request.query_params.get("search")
+        option = self.request.query_params.get("option")
+        queryset_list = []
         # 글 검색
-        if self.request.query_params.get("option") == "article":
+        if option == "article" or option == "all":
             queryset = Article.objects.filter(db_status=1)
             if search is not None:
                 queryset = (
@@ -363,10 +365,10 @@ class ArticleSearchView(generics.ListAPIView):
                     .distinct()
                     .order_by("-created_at")
                 )
-            return queryset
+                for a in queryset:
+                    queryset_list.append(a)
         # 태그 검색
-        elif self.request.query_params.get("option") == "tag":
-            queryset_list = []
+        if option == "tag" or option == "all":
             queryset = Tag.objects.filter(Q(db_status=1) & Q(tag__icontains=search))
             if search is not None:
                 for a in queryset:
@@ -374,12 +376,10 @@ class ArticleSearchView(generics.ListAPIView):
                     for b in taglist:
                         if b.article.db_status == 1:
                             queryset_list.append(b.article)
-            return queryset_list
         # 지역 검색
-        else:
+        if option == "location" or option == "all":
             search_list = search.split(" ")
             location_list = []
-            queryset_list = []
             queryset = MapDataBase.objects.filter(db_status=1)
             if search is not None:
                 for location in search_list:
@@ -399,7 +399,12 @@ class ArticleSearchView(generics.ListAPIView):
                     )
                     for b in article_list:
                         queryset_list.append(b)
-            return queryset_list
+        # 중복 검색 값 제거
+        result = []
+        for i in queryset_list:
+            if i not in result:
+                result.append(i)
+        return result
 
 
 class LocationArticlesView(generics.ListAPIView):

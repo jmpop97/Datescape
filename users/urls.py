@@ -2,6 +2,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
+    TokenBlacklistView,
 )
 from users import views
 from articles.views import UserArticleView, UserCommentView, BookMarkView
@@ -11,7 +12,9 @@ urlpatterns = [
     path(
         "log-in/", views.CustomTokenObtainPairView.as_view(), name="token_obtain_pair"
     ),
+    path("islogin/", views.isLoginUserView.as_view(), name="is_login"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("logout/", TokenBlacklistView.as_view(), name="token_blacklist"),
     path("sign-up/", views.UserView.as_view(), name="signup"),
     # admin유저만
     path("userlist/", views.UserListView.as_view(), name="userlist"),
