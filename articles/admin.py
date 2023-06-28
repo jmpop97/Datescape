@@ -26,7 +26,7 @@ class TagListAdmin(admin.ModelAdmin):
 
 
 class ArticlesAdmin(admin.ModelAdmin):
-    list_display = ["id", "title", "user", "content", "score", "db_status"]
+    list_display = ["id", "title", "user", "content", "score", "db_status","created_at",]
     list_filter = [
         "db_status",
         "created_at",
