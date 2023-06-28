@@ -72,7 +72,9 @@ class EmoticonView(APIView):
         output: 요청 처리에 따라 status 값을 반환
         """
         if "db_status" in request.data:
-            request.data.pop("db_status")
+            return Response(
+                {"message": "수정할 수 없는 정보가 포함되어 있습니다."}, status=status.HTTP_403_FORBIDDEN
+            )
         if "images" in request.data:
             serializer = EmoticonCreateSerializer(
                 data=request.data,
@@ -99,15 +101,19 @@ class EmoticonView(APIView):
         output: 요청 처리에 따라 status 값을 반환
         """
         if "creator" in request.data:
-            request.data.pop("creator")
+            return Response(
+                {"message": "수정할 수 없는 정보가 포함되어 있습니다."}, status=status.HTTP_403_FORBIDDEN
+            )
 
         if request.user.is_admin == 0:
             if "db_status" in request.data:
-                request.data.pop("db_status")
+                return Response(
+                    {"message": "수정할 수 없는 정보가 포함되어 있습니다."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             emoticon = get_object_or_404(
                 Emoticon, id=request.data.get("emoticon_id"), db_status=0
             )
-            request.data.pop("db_status")
             """404에러 프론트에서 '판매중으로 수정할 수 없거나 등록되지 않은 이모티콘입니다' 메세지 띄우기"""
             # 프론트 데이터 형식
         else:
@@ -368,7 +374,8 @@ class SoldEmoticonCountListView(APIView):
         판매중+판매중단 이모티콘 리스트 조회(관리자만 조회 가능)
         판매자 지급금 계산을 위한 상품등록 된 이모티콘 리스트 조회
         """
-        if request.user.is_admin == 1:
+        if request.user:
+            # if request.user.is_admin == 1: # 피드백 기간동안 일반유저 오픈
             emoticon_list = Emoticon.objects.all()
             serializer = EmoticonSerializer(emoticon_list, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -388,7 +395,8 @@ class SoldEmoticonCountView(APIView):
         누적 판매량 조회(관리자만 조회 가능)
         판매자 지급금 계산을 위한 판매량 조회
         """
-        if request.user.is_admin == 1:
+        if request.user:
+            # if request.user.is_admin == 1: # 피드백 기간동안 일반유저 오픈
             emoticon = get_object_or_404(Emoticon, id=emoticon_id)
             serializer = EmoticonSerializer(emoticon, context={"user": request.user})
             return Response(serializer.data, status=status.HTTP_200_OK)
