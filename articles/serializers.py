@@ -209,7 +209,7 @@ class ReplySerializer(serializers.ModelSerializer):
     emoticon_image = serializers.SerializerMethodField()
 
     def get_writer_name(self, reply):
-        return reply.writer.username
+        return reply.writer.nickname
 
     def get_emoticon_image(self, comment):
         if comment.use_emoticon:

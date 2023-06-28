@@ -32,7 +32,7 @@ class EmoticonSerializer(serializers.ModelSerializer):
 
     def get_creator_name(self, emoticon):
         if emoticon.creator:
-            creator = emoticon.creator.username
+            creator = emoticon.creator.nickname
         else:
             creator = "삭제된 사용자"
         return creator
