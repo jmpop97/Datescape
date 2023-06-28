@@ -56,7 +56,7 @@ class Emoticon(CommonModel):
     creator = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True
     )  # User 삭제시 이모티콘은 유지
-    title = models.CharField("이모티콘 제목", max_length=50)
+    title = models.CharField("이모티콘 제목", max_length=50, unique=True)
     db_status = models.IntegerField("이모티콘 상태", choices=db_status_choice, default=0)
 
     def __str__(self):
