@@ -88,7 +88,8 @@ class limit1Throttle(UserRateThrottle):
         if request.method == "POST":
             self.rate = self.get_rate()
             self.num_requests, self.duration = self.parse_rate(self.rate)
-            self.num_requests = 3
+            self.num_requests = 4
+            self.duration = 1
             # overriding
             if self.rate is None:
                 return True
@@ -120,7 +121,8 @@ class TestThrottle(UserRateThrottle):
         if request.method == "POST":
             self.rate = self.get_rate()
             self.num_requests, self.duration = self.parse_rate(self.rate)
-            self.num_requests = 5
+            self.num_requests = 1
+            self.duration = 1
             # overriding
             if self.rate is None:
                 return True
