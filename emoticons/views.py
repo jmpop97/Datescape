@@ -54,7 +54,9 @@ class EmoticonView(APIView):
         input: 로그인 상태
         output: db_status=1, 사용자가 구매한 이모티콘 객체들을 Response
         """
-        emoticon = UserEmoticonList.objects.filter(db_status=1, buyer=request.user)
+        emoticon = UserEmoticonList.objects.filter(
+            db_status=1, buyer=request.user
+        ).order_by("-created_at")
         qs = [Emoticon.objects.get(title="기본")]
         for a in emoticon:
             qs.append(a.sold_emoticon)
@@ -247,7 +249,7 @@ class EmoticonListView(APIView):
         input: 로그인 권한
         output: 요청 처리에 따라 data와 status 값을 반환
         """
-        emoticon_list = Emoticon.objects.filter(db_status=1)
+        emoticon_list = Emoticon.objects.filter(db_status=1).order_by("-created_at")
         serializer = EmoticonSerializer(emoticon_list, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -272,12 +274,14 @@ class EmoticonTempListView(APIView):
         output: 요청 처리에 따라 data와 status 값을 반환
         """
         if request.user.is_admin == 1:  # 관리자인 경우
-            emoticon_list = Emoticon.objects.filter(db_status=0)
+            emoticon_list = Emoticon.objects.filter(db_status=0).order_by("-created_at")
             serializer = EmoticonSerializer(emoticon_list, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         elif request.user.is_admin == 0:  # 일반 유저인 경우
-            emoticon_list = Emoticon.objects.filter(db_status=0, creator=request.user)
+            emoticon_list = Emoticon.objects.filter(
+                db_status=0, creator=request.user
+            ).order_by("-created_at")
             serializer = EmoticonSerializer(emoticon_list, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -376,7 +380,7 @@ class SoldEmoticonCountListView(APIView):
         """
         if request.user:
             # if request.user.is_admin == 1: # 피드백 기간동안 일반유저 오픈
-            emoticon_list = Emoticon.objects.all()
+            emoticon_list = Emoticon.objects.all().order_by("-created_at")
             serializer = EmoticonSerializer(emoticon_list, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
