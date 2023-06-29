@@ -713,6 +713,11 @@ class ArticleRandomView(generics.ListAPIView):
                     "-created_at"
                 )
             return articles
+        # 최신 게시물 5개
+        if self.request.query_params.get("option") == "update":
+            articles = Article.objects.all()
+            articles = articles[0:5]
+            return articles
 
 
 def get_random_article():
