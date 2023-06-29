@@ -40,11 +40,111 @@ import requests
 import time
 import random
 from apscheduler.schedulers.background import BackgroundScheduler
-
+from rest_framework.throttling import UserRateThrottle
 
 REST_API_KEY = settings.REST_API
 NAVER_MAPS_API_GW_API_KEY_ID = settings.NAVER_MAPS_API_ID
 NAVER_MAPS_API_GW_API_KEY = settings.NAVER_MAPS_API_KEY
+
+
+# 10초당 3번시 벤
+class limit10Throttle(UserRateThrottle):
+    def __init__(self):
+        pass
+
+    def allow_request(self, request, view):
+        if request.method == "POST":
+            self.rate = self.get_rate()
+            self.num_requests = 3
+            self.duration = 10
+            # overriding
+            if self.rate is None:
+                return True
+            self.key = self.get_cache_key(request, view)
+            if self.key is None:
+                return True
+
+            self.history = self.cache.get(self.key, [])
+            self.now = self.timer()
+
+            # Drop any requests from the history which have now passed the
+            # throttle duration
+            while self.history and self.history[-1] <= self.now - self.duration:
+                self.history.pop()
+            if len(self.history) >= self.num_requests:
+                request.user.is_active = False
+                request.user.save()
+                return self.throttle_failure()
+            return self.throttle_success()
+        return True
+
+
+# 초당 4번시 벤
+class limit1Throttle(UserRateThrottle):
+    def __init__(self):
+        pass
+
+    def allow_request(self, request, view):
+        if request.method == "POST":
+            self.rate = self.get_rate()
+            self.num_requests, self.duration = self.parse_rate(self.rate)
+            self.num_requests = 4
+            self.duration = 1
+            # overriding
+            if self.rate is None:
+                return True
+            self.key = self.get_cache_key(request, view)
+            if self.key is None:
+                return True
+
+            self.history = self.cache.get(self.key, [])
+            self.now = self.timer()
+
+            # Drop any requests from the history which have now passed the
+            # throttle duration
+            while self.history and self.history[-1] <= self.now - self.duration:
+                self.history.pop()
+            if len(self.history) >= self.num_requests:
+                request.user.is_active = False
+                request.user.save()
+                return self.throttle_failure()
+            return self.throttle_success()
+        return True
+
+
+# 최대 초당 1번만 받음
+class TestThrottle(UserRateThrottle):
+    def __init__(self):
+        pass
+
+    def allow_request(self, request, view):
+        if request.method == "POST":
+            self.rate = self.get_rate()
+            self.num_requests, self.duration = self.parse_rate(self.rate)
+            self.num_requests = 1
+            self.duration = 1
+            # overriding
+            if self.rate is None:
+                return True
+            self.key = self.get_cache_key(request, view)
+            if self.key is None:
+                return True
+
+            self.history = self.cache.get(self.key, [])
+            self.now = self.timer()
+
+            # Drop any requests from the history which have now passed the
+            # throttle duration
+            while self.history and self.history[-1] <= self.now - self.duration:
+                self.history.pop()
+            if len(self.history) >= self.num_requests:
+                request.user.is_active = True
+                request.user.save()
+                print(request.user)
+                print(len(self.history))
+                return self.throttle_failure()
+            return self.throttle_success()
+        return True
 
 
 class CommonPagination(PageNumberPagination):
@@ -73,11 +173,12 @@ class ArticleView(APIView, PaginationHandler):
     게시글 작성
     """
 
+    throttle_classes = [TestThrottle, limit1Throttle, limit10Throttle]
+
     pagination_class = CommonPagination
 
     def get(self, request):
         score = request.GET.get("score")
-        print(score)
         try:
             score_range = score.split(",")
         except:
