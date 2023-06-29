@@ -26,6 +26,7 @@ from articles.models import (
     BookMark,
     Reply,
 )
+from emoticons.models import UserEmoticonList, EmoticonImage
 from alarms.models import Alarm
 from dsproject import settings
 from django.db.models import Q
@@ -561,7 +562,22 @@ class CommentView(APIView):
         output: 요청 처리에 따라 status 값을 반환
         """
         article = get_object_or_404(Article, id=article_id, db_status=1)
-        serializer = CommentCreateSerializer(data=request.data)
+        if request.data.get("use_emoticon") != "":
+            emoticon = EmoticonImage.objects.get(
+                id=request.data.get("use_emoticon")
+            ).emoticon
+            user_buy = UserEmoticonList.objects.filter(
+                buyer=request.user, sold_emoticon=emoticon
+            )
+            if user_buy or (emoticon.title == "기본"):
+                serializer = CommentCreateSerializer(data=request.data)
+            else:
+                return Response(
+                    {"message": "잘못 된 요청입니다."}, status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            serializer = CommentCreateSerializer(data=request.data)
+
         if serializer.is_valid():
             serializer.save(writer=request.user, article=article)
             # 알림 생성
