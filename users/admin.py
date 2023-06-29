@@ -127,8 +127,9 @@ class UserAdmin(BaseUserAdmin):
         "is_active",
         "is_admin",
         "last_login",
+        "user_status",
     ]
-    list_filter = ["is_admin", "login_type"]
+    list_filter = ["is_admin", "login_type", "user_status"]
     list_display_links = ["username", "email", "login_type"]
     fieldsets = [
         (None, {"fields": ["email", "password"]}),
@@ -144,7 +145,17 @@ class UserAdmin(BaseUserAdmin):
                 ]
             },
         ),
-        ("Permissions", {"fields": ["is_active", "is_admin", "last_login"]}),
+        (
+            "Permissions",
+            {
+                "fields": [
+                    "is_active",
+                    "is_admin",
+                    "last_login",
+                    "user_status",
+                ]
+            },
+        ),
     ]
     # add_fieldsets is not a standard ModelAdmin attribute. UserAdmin
     # overrides get_fieldsets to use this attribute when creating a user.
@@ -157,7 +168,7 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     ]
-    search_fields = ["username"]
+    search_fields = ["username","email","nickname"]
     ordering = ["id"]
     filter_horizontal = []
     list_per_page = 10
