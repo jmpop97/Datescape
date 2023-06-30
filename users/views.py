@@ -143,13 +143,26 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 # 로그인된 유저 확인하기
 class isLoginUserView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get(self, request):
-        user = request.user
-        if user:
-            serializer = UserSerializer(user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            user = request.user
+            # print(user)
+            if user:
+                # print(user)
+                serializer = UserSerializer(user)
+                # print(serializer.data)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(
+                {"message": f"${serializer.errors}"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        except:
+            return Response(
+                {f"{user}", "로그인되지 않았습니다. 다시 로그인해주세요."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         # return Response(
         #     {"message": f"${serializer.errors}"}, status=status.HTTP_401_UNAUTHORIZED
         # )
@@ -185,7 +198,7 @@ class UserDetailView(APIView):
 
 # 마이페이지-내정보
 class ProfileView(APIView):
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         user = request.user
@@ -215,6 +228,15 @@ class ProfileView(APIView):
             return Response(
                 {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
             )
+
+    def delete(self, request):
+        user = request.user
+        if user:
+            user.is_active = False
+            user.user_status = "spleep"
+            user.save()
+            return Response({f"{user} 휴면중"}, status=status.HTTP_200_OK)
+        return Response({"잘못된 요청입니다."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # 비밀번호 재설정 이메일에서 링크 보내기

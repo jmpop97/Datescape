@@ -26,6 +26,7 @@ from articles.models import (
     BookMark,
     Reply,
 )
+from emoticons.models import UserEmoticonList, EmoticonImage
 from alarms.models import Alarm
 from dsproject import settings
 from django.db.models import Q
@@ -40,11 +41,111 @@ import requests
 import time
 import random
 from apscheduler.schedulers.background import BackgroundScheduler
-
+from rest_framework.throttling import UserRateThrottle
 
 REST_API_KEY = settings.REST_API
 NAVER_MAPS_API_GW_API_KEY_ID = settings.NAVER_MAPS_API_ID
 NAVER_MAPS_API_GW_API_KEY = settings.NAVER_MAPS_API_KEY
+
+
+# 10초당 3번시 벤
+class limit10Throttle(UserRateThrottle):
+    def __init__(self):
+        pass
+
+    def allow_request(self, request, view):
+        if request.method == "POST":
+            self.rate = self.get_rate()
+            self.num_requests = 3
+            self.duration = 10
+            # overriding
+            if self.rate is None:
+                return True
+            self.key = self.get_cache_key(request, view)
+            if self.key is None:
+                return True
+
+            self.history = self.cache.get(self.key, [])
+            self.now = self.timer()
+
+            # Drop any requests from the history which have now passed the
+            # throttle duration
+            while self.history and self.history[-1] <= self.now - self.duration:
+                self.history.pop()
+            if len(self.history) >= self.num_requests:
+                request.user.is_active = False
+                request.user.save()
+                return self.throttle_failure()
+            return self.throttle_success()
+        return True
+
+
+# 초당 4번시 벤
+class limit1Throttle(UserRateThrottle):
+    def __init__(self):
+        pass
+
+    def allow_request(self, request, view):
+        if request.method == "POST":
+            self.rate = self.get_rate()
+            self.num_requests, self.duration = self.parse_rate(self.rate)
+            self.num_requests = 4
+            self.duration = 1
+            # overriding
+            if self.rate is None:
+                return True
+            self.key = self.get_cache_key(request, view)
+            if self.key is None:
+                return True
+
+            self.history = self.cache.get(self.key, [])
+            self.now = self.timer()
+
+            # Drop any requests from the history which have now passed the
+            # throttle duration
+            while self.history and self.history[-1] <= self.now - self.duration:
+                self.history.pop()
+            if len(self.history) >= self.num_requests:
+                request.user.is_active = False
+                request.user.save()
+                return self.throttle_failure()
+            return self.throttle_success()
+        return True
+
+
+# 최대 초당 1번만 받음
+class TestThrottle(UserRateThrottle):
+    def __init__(self):
+        pass
+
+    def allow_request(self, request, view):
+        if request.method == "POST":
+            self.rate = self.get_rate()
+            self.num_requests, self.duration = self.parse_rate(self.rate)
+            self.num_requests = 1
+            self.duration = 1
+            # overriding
+            if self.rate is None:
+                return True
+            self.key = self.get_cache_key(request, view)
+            if self.key is None:
+                return True
+
+            self.history = self.cache.get(self.key, [])
+            self.now = self.timer()
+
+            # Drop any requests from the history which have now passed the
+            # throttle duration
+            while self.history and self.history[-1] <= self.now - self.duration:
+                self.history.pop()
+            if len(self.history) >= self.num_requests:
+                request.user.is_active = True
+                request.user.save()
+                print(request.user)
+                print(len(self.history))
+                return self.throttle_failure()
+            return self.throttle_success()
+        return True
 
 
 class CommonPagination(PageNumberPagination):
@@ -73,11 +174,12 @@ class ArticleView(APIView, PaginationHandler):
     게시글 작성
     """
 
+    throttle_classes = [TestThrottle, limit1Throttle, limit10Throttle]
+
     pagination_class = CommonPagination
 
     def get(self, request):
         score = request.GET.get("score")
-        print(score)
         try:
             score_range = score.split(",")
         except:
@@ -460,7 +562,22 @@ class CommentView(APIView):
         output: 요청 처리에 따라 status 값을 반환
         """
         article = get_object_or_404(Article, id=article_id, db_status=1)
-        serializer = CommentCreateSerializer(data=request.data)
+        if request.data.get("use_emoticon") != "":
+            emoticon = EmoticonImage.objects.get(
+                id=request.data.get("use_emoticon")
+            ).emoticon
+            user_buy = UserEmoticonList.objects.filter(
+                buyer=request.user, sold_emoticon=emoticon
+            )
+            if user_buy or (emoticon.title == "기본"):
+                serializer = CommentCreateSerializer(data=request.data)
+            else:
+                return Response(
+                    {"message": "잘못 된 요청입니다."}, status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            serializer = CommentCreateSerializer(data=request.data)
+
         if serializer.is_valid():
             serializer.save(writer=request.user, article=article)
             # 알림 생성
@@ -524,6 +641,7 @@ class CommentView(APIView):
         if request.user == comment.writer:
             comment.db_status = 2
             comment.save()
+            Alarm.objects.filter(type="comment", type_id=comment_id).delete()
             return Response({"message": "삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({"message": "권한이 없습니다!"}, status=status.HTTP_403_FORBIDDEN)
@@ -611,6 +729,11 @@ class ArticleRandomView(generics.ListAPIView):
                 articles = tag.tag.article_set.filter(db_status=1).order_by(
                     "-created_at"
                 )
+            return articles
+        # 최신 게시물 5개
+        if self.request.query_params.get("option") == "update":
+            articles = Article.objects.all()
+            articles = articles[0:5]
             return articles
 
 
@@ -753,6 +876,7 @@ class ReplyView(APIView):
         if request.user == reply.writer:
             reply.db_status = 2
             reply.save()
+            Alarm.objects.filter(type="reply", type_id=reply_id).delete()
             return Response({"message": "삭제되었습니다."}, status=status.HTTP_200_OK)
         else:
             return Response({"message": "권한이 없습니다!"}, status=status.HTTP_403_FORBIDDEN)

@@ -153,7 +153,7 @@ class CommentSerializer(serializers.ModelSerializer):
     article_main_image = serializers.ImageField(source="article.main_image")
 
     def get_username(self, comment):
-        return comment.writer.username
+        return comment.writer.nickname
 
     def get_likers(self, comment):
         qs = CommentLike.objects.filter(comment=comment, db_status=1)
@@ -209,7 +209,7 @@ class ReplySerializer(serializers.ModelSerializer):
     emoticon_image = serializers.SerializerMethodField()
 
     def get_writer_name(self, reply):
-        return reply.writer.username
+        return reply.writer.nickname
 
     def get_emoticon_image(self, comment):
         if comment.use_emoticon:
