@@ -719,6 +719,8 @@ class ArticleRandomView(generics.ListAPIView):
             return random_article
         # 임의의 태그 선택
         elif self.request.query_params.get("option") == "tag":
+            if WeeklyTags.objects.all().count() == 0:
+                get_weekly_tags()
             weekly_tags = WeeklyTags.objects.all()
             tag = weekly_tags[0]
             articles = tag.tag.article_set.filter(db_status=1).order_by("-created_at")
@@ -773,10 +775,6 @@ def get_weekly_tags():
         WeeklyTags.objects.create(tag=tag)
 
 
-try:
-    get_weekly_tags()
-except:
-    pass
 scheduler.add_job(get_weekly_tags, "cron", hour=0, id="rand_3")
 
 scheduler.start()
@@ -788,6 +786,8 @@ class WeeklyTagsView(APIView):
     """
 
     def get(self, request):
+        if WeeklyTags.objects.all().count() == 0:
+            get_weekly_tags()
         weekly_tags = WeeklyTags.objects.all()
         serializer = TagSerializer(weekly_tags, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
