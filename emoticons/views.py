@@ -57,9 +57,10 @@ class EmoticonView(APIView):
         emoticon = UserEmoticonList.objects.filter(
             db_status=1, buyer=request.user
         ).order_by("-created_at")
-        qs = [Emoticon.objects.get(title="기본")]
+        qs = []
         for a in emoticon:
             qs.append(a.sold_emoticon)
+        qs.append(Emoticon.objects.get(title="기본"))
 
         serializer = EmoticonSerializer(qs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -90,7 +91,7 @@ class EmoticonView(APIView):
 
         if serializer.is_valid():
             serializer.save(creator=request.user)
-            return Response({"message": "신청 완료"}, status=status.HTTP_200_OK)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
