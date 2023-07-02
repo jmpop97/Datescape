@@ -7,7 +7,9 @@ from emoticons.serializers import (
     EmoticonCreateSerializer,
     EmoticonImageSerializer,
 )
+from users.serializers import UserSerializer
 from emoticons.models import Emoticon, EmoticonImage, UserEmoticonList
+from users.models import User
 from dsproject import settings
 import requests
 import json
@@ -57,9 +59,10 @@ class EmoticonView(APIView):
         emoticon = UserEmoticonList.objects.filter(
             db_status=1, buyer=request.user
         ).order_by("-created_at")
-        qs = [Emoticon.objects.get(title="기본")]
+        qs = []
         for a in emoticon:
             qs.append(a.sold_emoticon)
+        qs.append(Emoticon.objects.get(title="기본"))
 
         serializer = EmoticonSerializer(qs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -90,7 +93,7 @@ class EmoticonView(APIView):
 
         if serializer.is_valid():
             serializer.save(creator=request.user)
-            return Response({"message": "신청 완료"}, status=status.HTTP_200_OK)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -237,21 +240,59 @@ class EmoticonListView(APIView):
     전체 이모티콘 조회
 
     판매중인 전체 이모티콘 조회 요청을 처리합니다.
-    로그인 권한이 요구되며 판매중 상태의 이모티콘 객체들을 반환합니다.
+    판매중 상태의 이모티콘 객체들을 반환합니다.
     """
-
-    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get(self, request):
         """
         판매중인 전체 이모티콘 조회 요청을 처리합니다.
 
-        input: 로그인 권한
         output: 요청 처리에 따라 data와 status 값을 반환
         """
         emoticon_list = Emoticon.objects.filter(db_status=1).order_by("-created_at")
         serializer = EmoticonSerializer(emoticon_list, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class EmoticonCreatorListView(APIView):
+    """
+    제작자별 이모티콘 보기
+
+    판매중인 이모티콘 중 제작자별 조회 요청을 처리합니다.
+    제작자의 판매중 상태인 이모티콘 객체들을 반환합니다.
+    """
+
+    def get(self, request, creator_id, nickname):
+        """
+        제작자의 판매중인 이모티콘 조회 요청을 처리합니다.
+
+        output: 요청 처리에 따라 data와 status 값을 반환
+        """
+        nickname = nickname
+        if nickname == "null":
+            if creator_id == 0:
+                emoticon_list = Emoticon.objects.filter(creator=None)
+                serializer = EmoticonSerializer(emoticon_list, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                creator = get_object_or_404(User, id=creator_id)
+                emoticon_list = Emoticon.objects.filter(
+                    db_status=1, creator=creator
+                ).order_by("-created_at")
+                serializer = EmoticonSerializer(emoticon_list, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+        elif nickname == "nickname":
+            qs = []
+            emoticon_list = Emoticon.objects.filter(db_status=1).order_by("-created_at")
+            for a in emoticon_list:
+                if a.creator:
+                    if a.creator in qs:
+                        pass
+                    else:
+                        qs.append(a.creator)
+            print(qs)
+            serializer = UserSerializer(qs, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class EmoticonTempListView(APIView):
