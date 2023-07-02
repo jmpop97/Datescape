@@ -857,3 +857,57 @@ class ReplyView(APIView):
             return Response({"message": "삭제되었습니다."}, status=status.HTTP_200_OK)
         else:
             return Response({"message": "권한이 없습니다!"}, status=status.HTTP_403_FORBIDDEN)
+
+
+class ArticleListView(APIView, PaginationHandler):
+    pagination_class = CommonPagination
+
+    def score_filter(self, request):
+        score = request.GET.get("score", "0,10")
+        score_range = score.split(",")
+
+        queryset = Article.objects.filter(
+            db_status=1, score__range=[int(score_range[0]), int(score_range[1])]
+        )
+        return queryset
+
+    def user_filter(self, request):
+        user_id = request.GET.get("user_id", request.user.id)
+        queryset = Article.objects.filter(db_status=1, user_id=user_id)
+        return queryset
+
+    dic_article_list = {
+        "score": score_filter,
+        "user": user_filter,
+    }
+
+    def order_by_list(self, request, queryset):
+        """정렬 순서 정하기"""
+        order_types = request.GET.get("order_by", "-created_at")
+        order_type = order_types.split(",")
+        queryset = queryset.order_by(*order_type)
+        return queryset
+
+    def list_page(self, queryset, page_size):
+        """pagination"""
+        if page_size == "*":
+            serializer = ArticleSerializer(queryset, many=True)
+        else:
+            self.pagination_class.page_size = page_size
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_paginated_response(
+                    ArticleSerializer(page, many=True).data
+                )
+            else:
+                serializer = ArticleSerializer(queryset, many=True)
+        return serializer, status.HTTP_200_OK
+
+    def get(self, request):
+        page_size = request.GET.get("size", 9)
+        filter_type = request.GET.get("type", "score")
+
+        queryset = self.dic_article_list.get(filter_type)(self, request)
+        queryset_order = self.order_by_list(request, queryset)
+        serializer, status = self.list_page(queryset_order, page_size)
+        return Response(serializer.data, status=status)
