@@ -45,6 +45,11 @@ BACK_URL = getattr(settings, "BACK_URL")
 DEFAULT_FROM_EMAIL = getattr(settings, "DEFAULT_FROM_EMAIL")
 
 
+# loadbalancer 로그 지우기
+def home(request):
+    return HttpResponse("")
+
+
 # 아이디 찾기
 class FindUserIDView(APIView):
     def post(self, request):
