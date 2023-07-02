@@ -82,6 +82,8 @@ class Emoticon(CommonModel):
                 Alarm.objects.create(
                     target_user=self.creator, type="emoticon", type_id=self.pk
                 )
+                # 제작자 사용가능하게 해주기
+                UserEmoticonList.objects.create(buyer=self.creator, sold_emoticon=self)
 
 
 class EmoticonImage(CommonModel):
