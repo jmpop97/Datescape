@@ -14,6 +14,11 @@ urlpatterns = [
         "temp/", views.EmoticonTempListView.as_view(), name="emoticon_temp_list"
     ),  # 임시저장 이모티콘 리스트
     path(
+        "creator/<int:creator_id>/<str:nickname>/",
+        views.EmoticonCreatorListView.as_view(),
+        name="emoticon_creator_list",
+    ),  # 제작자별 이모티콘 리스트
+    path(
         "payment/", views.UserEmoticonListView.as_view(), name="user_buy_emoticon"
     ),  # 이모티콘 결제 DB저장
     path(

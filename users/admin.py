@@ -174,7 +174,7 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     ]
-    search_fields = ["username","email","nickname"]
+    search_fields = ["username", "email", "nickname"]
     ordering = ["id"]
     filter_horizontal = []
     list_per_page = 10
