@@ -129,7 +129,13 @@ class UserAdmin(BaseUserAdmin):
         "last_login",
         "user_status",
     ]
-    list_filter = ["is_admin", "login_type", "user_status"]
+    list_filter = [
+        "is_admin",
+        "login_type",
+        "is_active",
+        "user_status",
+        "is_admin",
+    ]
     list_display_links = ["username", "email", "login_type"]
     fieldsets = [
         (None, {"fields": ["email", "password"]}),
@@ -168,7 +174,7 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     ]
-    search_fields = ["username","email","nickname"]
+    search_fields = ["username", "email", "nickname"]
     ordering = ["id"]
     filter_horizontal = []
     list_per_page = 10
