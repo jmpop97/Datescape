@@ -158,6 +158,7 @@ class MapDataBaseAdmin(admin.ModelAdmin):
 
 
 class TagAdmin(CommonModelAdmin):
+    fields =["tag"]
     list_display = ["id", "tag"]
     list_display_links = ["id", "tag"]
     search_fields = ["tag"]

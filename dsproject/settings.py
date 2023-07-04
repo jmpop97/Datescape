@@ -62,9 +62,9 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     # 채팅
-    "daphne",
-    "channels",
-    "chat",
+    # "daphne",
+    # "channels",
+    # "chat",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
