@@ -26,6 +26,7 @@ from articles.models import (
     BookMark,
     Reply,
 )
+from users.models import User
 from emoticons.models import UserEmoticonList, EmoticonImage
 from alarms.models import Alarm
 from dsproject import settings
@@ -501,6 +502,13 @@ class ArticleSearchView(generics.ListAPIView):
                     )
                     for b in article_list:
                         queryset_list.append(b)
+        # 글작성자 검색
+        if option == "user" or option == "all":
+            users = User.objects.filter(user_status='active', nickname__icontains=search)
+            for u in users:
+                article_list = u.article_user.filter(db_status=1).order_by("-created_at")
+                for b in article_list:
+                        queryset_list.append(b)
         # 중복 검색 값 제거
         result = []
         for i in queryset_list:
@@ -734,7 +742,7 @@ class ArticleRandomView(generics.ListAPIView):
             return articles
         # 최신 게시물 5개
         if self.request.query_params.get("option") == "update":
-            articles = Article.objects.all()
+            articles = Article.objects.filter(db_status=1).order_by("-created_at")
             articles = articles[0:5]
             return articles
 
@@ -898,10 +906,32 @@ class ArticleListView(APIView, PaginationHandler):
         user_id = request.GET.get("user_id", request.user.id)
         queryset = Article.objects.filter(db_status=1, user_id=user_id)
         return queryset
+    
+    def location_filter(self, request):
+        location = request.GET.get("location", None)
+        queryset_list = []
+        queryset = MapDataBase.objects.filter(db_status=1)
+        if location is not None:
+            queryset = (
+                queryset.filter(
+                    Q(jibun_address__contains=location)
+                    | Q(road_address__contains=location)
+                )
+                .distinct()
+                .order_by("-created_at")
+            )
+        for a in queryset:
+            article_list = a.article_set.filter(db_status=1).order_by(
+                "-created_at"
+            )
+            for b in article_list:
+                queryset_list.append(b)
+        return queryset_list
 
     dic_article_list = {
         "score": score_filter,
         "user": user_filter,
+        "location": location_filter,
     }
 
     def order_by_list(self, request, queryset):
