@@ -96,6 +96,9 @@
 ### 페이지네이션
 - django rest-framework PageNumberPagination
 
+### 내 주변 명소
+- 사용자의 위치를 기준으로 반경 nKm 내에 있는 데이터들 불러오기
+
 ## 이모티콘
 ### 이모티콘 CRUD
 - 이모티콘 승인 기간
