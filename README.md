@@ -16,9 +16,10 @@
 
 ### 팀 >_water💦
 - [박종민](https://github.com/jmpop97) 
+  - 리더
   - 서버 배포
   - docker
-  - 왜 이렇게 짧냐고 말씀하신다면 서버는 너무 어렵습니다....
+  - throttling
   - 신고기능구현(유저,게시글,댓글)
   - 
 - [박혜린](https://github.com/HyerinPark1998)
@@ -92,6 +93,12 @@
   - 프로필 사진
   - 일반회원 비밀번호 변경
 - 회원탈퇴(계정 비활성화)
+- throttling
+  - 1/second throttling
+  - 4/second not_active
+  - 4/10second not_active
+
+
 
 
 ## 게시글 및 댓글
@@ -132,7 +139,9 @@
 
 ## 신고
 ### 카테고리별 신고기능
-- 뿅뿅뿅
+- 신고시 카테고리 기능
+  - 프론트에서 카테고리 수정가능
+  - 카테고리 안에 카테고리 가능
 
 
 ## 알림
