@@ -749,9 +749,8 @@ class ArticleRandomView(generics.ListAPIView):
 def get_random_article():
     global random_article
     try:
-        queryset = Article.objects.filter(db_status=1)
-        randoms = random.sample(list(queryset), k=5)
-        random_article = randoms
+        queryset = Article.objects.filter(db_status=1).order_by("?")[:5]
+        random_article = queryset
     except:
         random_article = Article.objects.filter(db_status=1)
 
