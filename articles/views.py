@@ -700,7 +700,7 @@ class UserCommentView(APIView):
 
     def get(self, request):
         """작성한 댓글 가져오기"""
-        comments = Comment.objects.filter(writer=request.user, db_status=1).order_by(
+        comments = Comment.objects.filter(writer=request.user, db_status=1, article__db_status=1).order_by(
             "-created_at"
         )
         serializer = CommentSerializer(comments, many=True)
@@ -740,16 +740,18 @@ class ArticleRandomView(generics.ListAPIView):
             return articles
         # 최신 게시물 5개
         if self.request.query_params.get("option") == "update":
-            articles = Article.objects.filter(db_status=1).order_by("-created_at")
-            articles = articles[0:5]
+            articles = Article.objects.filter(db_status=1).order_by("-created_at")[0:5]
             return articles
+        
+        return Response({"message": "다시 시도해주세요"},status=status.HTTP_404_NOT_FOUND,)
 
 
 def get_random_article():
     global random_article
     try:
         queryset = Article.objects.filter(db_status=1)
-        random_article = random.sample(list(queryset), k=5)
+        randoms = random.sample(list(queryset), k=5)
+        random_article = randoms
     except:
         random_article = Article.objects.filter(db_status=1)
 
@@ -777,6 +779,7 @@ def get_weekly_tags():
             for i in range(weekly_tags.count() - 7):
                 weekly_tags[0].delete()
     except:
+        # 기본데이터 저장
         tag1 = Tag.objects.create(tag="여행")
         WeeklyTags.objects.create(tag=tag1)
         tag2 = Tag.objects.create(tag="바다")
@@ -808,7 +811,7 @@ class BookMarkView(APIView):
 
     def get(self, request):
         """(마이페이지) 북마크 리스트 보기"""
-        bookmark = BookMark.objects.filter(user=request.user)
+        bookmark = BookMark.objects.filter(user=request.user, article__db_status=1)
         serializer = BookMarkSerializer(bookmark, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
