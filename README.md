@@ -16,32 +16,32 @@
 
 
 ### 팀 >_water💦
-- [박종민](https://github.com/jmpop97) 
+- 박종민/[github](https://github.com/jmpop97), [blog](https://jmpop.tistory.com/)
   - 서버 배포
   - docker
   - 왜 이렇게 짧냐고 말씀하신다면 서버는 너무 어렵습니다....
   - 신고기능구현(유저,게시글,댓글)
   - 
-- [박혜린](https://github.com/HyerinPark1998)
+- 박혜린/[github](https://github.com/HyerinPark1998), [blog](https://hr1998.tistory.com/)
   - Articles 관련 메인 페이지 작업
   - tag 별로 메인 페이지 정렬
   - 게시글 관련 검색 기능 구현
   - 내 위치 기준으로 주변에 저장된 명소 보기 구현
   - 
-- [유혜민](https://github.com/Namunllvo) 
+- 유혜민/[github](https://github.com/Namunllvo), [blog](https://yump.tistory.com/)
   - 회원가입(이메일 인증 기능), 로그인, 회원 탈퇴 기능 구현
   - 소셜 로그인 기능 구현 4종(카카오, 네이버, 구글, 깃허브)
   - 비밀번호 변경, 찾기 구현
   - 프로필 수정 구현
   - 
-- [이현식](https://github.com/hyeon5819)
+- 이현식/[github](https://github.com/hyeon5819), [blog](https://velog.io/@hyeon5819)
   - 이모티콘 기능 구현(생성, 결제, 사용 가능)
   - 댓글 기능 구현
   - 북마크 기능 구현
   - 실시간 채팅 기능 구현
   - 게시글, 댓글 알림 기능 구현
   - 
-- [최진규](https://github.com/kyuparfum)
+- 최진규/[github](https://github.com/kyuparfum), [blog](https://kyuparfum.tistory.com/)
   - Articles 작업 게시글(front, back) CRUD 작업
   - 지도 api(카카오, 네이버) 사용
   - 지도로 주소 받는 부분 작업

@@ -142,8 +142,6 @@ class TestThrottle(UserRateThrottle):
             if len(self.history) >= self.num_requests:
                 request.user.is_active = True
                 request.user.save()
-                print(request.user)
-                print(len(self.history))
                 return self.throttle_failure()
             return self.throttle_success()
         return True
@@ -779,8 +777,10 @@ def get_weekly_tags():
             for i in range(weekly_tags.count() - 7):
                 weekly_tags[0].delete()
     except:
-        tag = Tag.objects.create(tag="여행")
-        WeeklyTags.objects.create(tag=tag)
+        tag1 = Tag.objects.create(tag="여행")
+        WeeklyTags.objects.create(tag=tag1)
+        tag2 = Tag.objects.create(tag="바다")
+        WeeklyTags.objects.create(tag=tag2)
 
 
 scheduler.add_job(get_weekly_tags, "cron", hour=0, id="rand_3")
