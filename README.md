@@ -15,26 +15,26 @@
 
 
 ### 팀 >_water💦
-- [박종민](https://github.com/jmpop97) 
+- 박종민/[github](https://github.com/jmpop97), blog[https://jmpop.tistory.com/]
   - 리더
   - 서버 배포
   - docker
   - throttling
   - 신고기능구현(유저,게시글,댓글)
   - 
-- [박혜린](https://github.com/HyerinPark1998)
+- 박혜린/[github](https://github.com/HyerinPark1998), blog[https://hr1998.tistory.com/]
   - Articles 관련 메인 페이지 작업
   - tag 별로 메인 페이지 정렬
   - 게시글 관련 검색 기능 구현
   - 내 위치 기준으로 주변에 저장된 명소 보기 구현
   - 
-- [유혜민](https://github.com/Namunllvo) 
+- 유혜민/[github](https://github.com/Namunllvo), blog[https://yump.tistory.com/]
   - 회원가입(이메일 인증), 로그인, 로그아웃, 회원 탈퇴 기능 구현
   - 소셜 로그인 기능 구현 4종(카카오, 네이버, 구글, 깃허브)
   - 아이디 찾기, 비밀번호 변경, 재설정 구현
   - 프로필 수정 구현
   - 
-- [이현식](https://github.com/hyeon5819)
+- 이현식/[github](https://github.com/hyeon5819), blog[https://velog.io/@hyeon5819]
   - 이모티콘(CRUD, 신청/구매/제작자별 조회, 신청 승인시 이메일 알림)
   - 관리자 페이지(누적 판매량/월별 판매량 조회, 판매상태별 조회, 판매상태 수정)
   - PG사 결제 연동(포트원)
@@ -43,7 +43,7 @@
   - 게시글 북마크 기능
   - 게시글, 댓글, 이모티콘 알림 기능
   - 
-- [최진규](https://github.com/kyuparfum)
+- 최진규/[github](https://github.com/kyuparfum), blog[https://kyuparfum.tistory.com/]
   - Articles 작업 게시글(front, back) CRUD 작업
   - 지도 api(카카오, 네이버) 사용
   - 지도로 주소 받는 부분 작업
