@@ -26,7 +26,6 @@ class AlarmSerializer(serializers.ModelSerializer):
     def get_emoticon(self, alarm):
         try:
             if alarm.type == "emoticon":
-                print("--------------------: ", alarm.type_id)
                 emoticon = Emoticon.objects.get(id=alarm.type_id)
                 return {"id": emoticon.id, "title": emoticon.title}
         except:

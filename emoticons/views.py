@@ -290,7 +290,6 @@ class EmoticonCreatorListView(APIView):
                         pass
                     else:
                         qs.append(a.creator)
-            print(qs)
             serializer = UserSerializer(qs, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 

@@ -142,8 +142,6 @@ class TestThrottle(UserRateThrottle):
             if len(self.history) >= self.num_requests:
                 request.user.is_active = True
                 request.user.save()
-                print(request.user)
-                print(len(self.history))
                 return self.throttle_failure()
             return self.throttle_success()
         return True
