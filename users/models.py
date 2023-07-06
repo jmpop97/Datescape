@@ -90,7 +90,7 @@ class User(AbstractBaseUser):
     is_active = models.BooleanField(default=True)
     is_admin = models.BooleanField(default=False)
 
-    User_Status_Type = [("active", "활동중"), ("spleep", "휴면중"), ("delete", "탈퇴")]
+    User_Status_Type = [("active", "활동중"), ("sleep", "휴면중"), ("delete", "탈퇴")]
     user_status = models.CharField(
         "계정 상태", max_length=10, choices=User_Status_Type, default="active"
     )

@@ -202,9 +202,11 @@ class UserListView(APIView):
     permission_classes = [permissions.IsAdminUser]
 
     def get(self, request):
-        user = User.objects.all()
-        serializer = UserSerializer(user, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        user = User.objects.filter(user_status="sleep")
+        if user:
+            serializer = UserSerializer(user, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"탈퇴한 유저가 없습니다"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserDetailView(APIView):
@@ -266,7 +268,7 @@ class ProfileView(APIView):
         user = request.user
         if user:
             user.is_active = False
-            user.user_status = "spleep"
+            user.user_status = "sleep"
             user.save()
             return Response({f"{user} 휴면중"}, status=status.HTTP_200_OK)
         return Response({"잘못된 요청입니다."}, status=status.HTTP_400_BAD_REQUEST)
