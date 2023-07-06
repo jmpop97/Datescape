@@ -61,10 +61,12 @@ class FindUserIDView(APIView):
                 # return Response(serializer.data, status=status.HTTP_200_OK)
                 return Response((user.username), status=status.HTTP_200_OK)
             else:
-                return Response(("소셜로그인을 이용해주세요"), status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "소셜로그인을 이용해주세요."}, status=status.HTTP_400_BAD_REQUEST
+                )
         else:
             return Response(
-                {"해당 이메일에 일치하는 회원이 없습니다!"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "해당 이메일에 일치하는 회원이 없습니다!"}, status=status.HTTP_400_BAD_REQUEST
             )
 
 
@@ -82,7 +84,7 @@ class ResetPasswordEmailView(APIView):
                     f"{REDIRECT_URI}templates/reset_password_change.html?uid={uid}"
                 )
 
-            return HttpResponse("만료된 링크입니다", status=status.HTTP_400_BAD_REQUEST)
+            return HttpResponse("만료된 링크입니다.", status=status.HTTP_400_BAD_REQUEST)
 
         except KeyError:
             return JsonResponse({"message": "INVALID_KEY"}, status=400)
@@ -105,7 +107,7 @@ class UserActivateView(APIView):
                 user.save()
                 return redirect(REDIRECT_URI)
             else:
-                return HttpResponse("만료된 링크입니다", status=status.HTTP_400_BAD_REQUEST)
+                return HttpResponse("만료된 링크입니다.", status=status.HTTP_400_BAD_REQUEST)
 
         except ValidationError:
             return JsonResponse({"message": "TYPE_ERROR"}, status=400)
@@ -125,27 +127,25 @@ class UserView(APIView):
             type = user.login_type
             if type != "normal":
                 return Response(
-                    f"이미 가입된 회원입니다. {type}로 가입하셨습니다. 확인해주세요.",
+                    {f"이미 가입된 회원입니다. {type}로 가입하셨습니다. 확인해주세요."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             return Response(
-                "이미 가입된 이메일입니다. 다른 이메일을 사용해주세요.", status=status.HTTP_400_BAD_REQUEST
+                {"이미 가입된 이메일입니다. 다른 이메일을 사용해주세요."}, status=status.HTTP_400_BAD_REQUEST
             )
 
         if User.objects.filter(username=username).exists():
             return Response(
-                "이미 존재하는 아이디입니다. 다른 아이디를 사용해주세요.", status=status.HTTP_400_BAD_REQUEST
+                {"이미 존재하는 아이디입니다. 다른 아이디를 사용해주세요."}, status=status.HTTP_400_BAD_REQUEST
             )
 
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(
-                {"message": "회원가입완료, 이메일을 확인해주세요!!"}, status=status.HTTP_201_CREATED
-            )
+            return Response({"회원가입완료, 이메일을 확인해주세요!!"}, status=status.HTTP_201_CREATED)
         else:
             return Response(
-                {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
+                {f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
             )
 
 
@@ -167,7 +167,7 @@ class isLoginUserView(APIView):
 
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(
-                {"message": f"${serializer.errors}"},
+                {"error": f"${serializer.errors}"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
         except:
@@ -218,7 +218,7 @@ class ProfileView(APIView):
             serializer = UserSerializer(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(
-            {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
+            {"error": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
         )
 
     def put(self, request):
@@ -228,7 +228,7 @@ class ProfileView(APIView):
 
         if User.objects.filter(nickname=nickname).exists():
             return Response(
-                "이미 사용 중인 닉네임입니다. 다른 닉네임을 사용해주세요.", status=status.HTTP_400_BAD_REQUEST
+                {"이미 사용 중인 닉네임입니다. 다른 닉네임을 사용해주세요."}, status=status.HTTP_400_BAD_REQUEST
             )
 
         serializer = ProfileEditSerializer(user, data=request.data)
@@ -241,12 +241,12 @@ class ProfileView(APIView):
             refresh["username"] = user.username
             refresh["login_type"] = user.login_type
             return Response(
-                (serializer.data, str(refresh), str(refresh.access_token)),
+                {serializer.data, str(refresh), str(refresh.access_token)},
                 status=status.HTTP_200_OK,
             )
         else:
             return Response(
-                {"message": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": f"${serializer.errors}"}, status=status.HTTP_400_BAD_REQUEST
             )
 
     def delete(self, request):
@@ -285,10 +285,10 @@ class ResetPasswordView(APIView):
                         [to_email],
                         html_message=html,
                     )
-                    return Response(("비밀번호 재설정 이메일 전송!"), status=status.HTTP_200_OK)
+                    return Response({"비밀번호 재설정 이메일 전송!"}, status=status.HTTP_200_OK)
                 else:
                     return Response(
-                        ("소셜로그인 회원입니다."), status=status.HTTP_400_BAD_REQUEST
+                        {"error": "소셜로그인 회원입니다."}, status=status.HTTP_400_BAD_REQUEST
                     )
 
         except User.DoesNotExist:
@@ -307,14 +307,17 @@ class ResetPasswordView(APIView):
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response(
-                "해당 이메일에 일치하는 회원이 없습니다!", status=status.HTTP_400_BAD_REQUEST
+                {"error": "해당 이메일에 일치하는 회원이 없습니다!"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         if not new_password1 or not new_password2:
-            return Response("비밀번호는 필수입니다!", status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "비밀번호는 필수입니다!"}, status=status.HTTP_400_BAD_REQUEST
+            )
         if new_password1 != new_password2:
             return Response(
-                "비밀번호가 일치하지 않습니다. 다시 확인해주세요!", status=status.HTTP_400_BAD_REQUEST
+                {"error": "비밀번호가 일치하지 않습니다. 다시 확인해주세요!"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         serializer = PasswordEditSerializer(user, data=request.data)
@@ -323,7 +326,7 @@ class ResetPasswordView(APIView):
             return JsonResponse({"message": "비밀번호 재설정이 완료되었습니다!"})
         else:
             return Response(
-                {"message": f"${serializer.errors}"},
+                {"error": f"${serializer.errors}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -345,15 +348,15 @@ class PasswordChangeView(APIView):
             serializer = PasswordEditSerializer(user, data=request.data)
             if serializer.is_valid():
                 serializer.save()
-                return Response(("비밀번호 변경하기 성공"), status=status.HTTP_200_OK)
+                return Response({"비밀번호 변경하기 성공"}, status=status.HTTP_200_OK)
             else:
                 return Response(
-                    {"message": f"${serializer.errors}"},
+                    {"error": f"${serializer.errors}"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         else:
             return Response(
-                ("SNS계정에서 변경하실 수 있습니다."), status=status.HTTP_400_BAD_REQUEST
+                {"error": "SNS계정에서 변경하실 수 있습니다."}, status=status.HTTP_400_BAD_REQUEST
             )
 
 
@@ -383,10 +386,10 @@ class ResendEmailView(APIView):
                         [to_email],
                         html_message=html,
                     )
-                    return Response(("일반회원 이메일 인증 재전송 성공!"), status=status.HTTP_200_OK)
+                    return Response({"일반회원 이메일 인증 재전송 성공!"}, status=status.HTTP_200_OK)
                 else:
                     return Response(
-                        ("소셜로그인 회원입니다."), status=status.HTTP_400_BAD_REQUEST
+                        {"error": "소셜로그인 회원입니다."}, status=status.HTTP_400_BAD_REQUEST
                     )
 
         except User.DoesNotExist:
@@ -399,9 +402,7 @@ class SocialUrlView(APIView):
     def post(self, request):
         social = request.data.get("social", None)
         if social is None:
-            return Response(
-                {"error": "소셜로그인이 아닙니다"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"소셜로그인이 아닙니다"}, status=status.HTTP_400_BAD_REQUEST)
         elif social == "kakao-login":
             url = (
                 "https://kauth.kakao.com/oauth/authorize?client_id="
@@ -494,6 +495,7 @@ class KakaoLoginView(APIView):
                 refresh["email"] = user.email
                 refresh["nickname"] = user.nickname
                 refresh["login_type"] = user.login_type
+                refresh["is_admin"] = user.is_admin
                 user.last_login = timezone.now()
                 user.save()
                 refresh["last_login"] = str(user.last_login)
@@ -520,6 +522,7 @@ class KakaoLoginView(APIView):
             refresh["email"] = user.email
             refresh["nickname"] = user.nickname
             refresh["login_type"] = user.login_type
+            refresh["is_admin"] = user.is_admin
             refresh["last_login"] = str(user.last_login)
             return Response(
                 {
@@ -574,6 +577,7 @@ class GoogleLoginView(APIView):
                 refresh["email"] = user.email
                 refresh["nickname"] = user.nickname
                 refresh["login_type"] = user.login_type
+                refresh["is_admin"] = user.is_admin
                 user.last_login = timezone.now()
                 user.save()
                 refresh["last_login"] = str(user.last_login)
@@ -600,6 +604,7 @@ class GoogleLoginView(APIView):
             refresh["email"] = user.email
             refresh["nickname"] = user.nickname
             refresh["login_type"] = user.login_type
+            refresh["is_admin"] = user.is_admin
             refresh["last_login"] = str(user.last_login)
             return Response(
                 {
@@ -671,6 +676,7 @@ class NaverLoginView(APIView):
                 refresh["email"] = user.email
                 refresh["nickname"] = user.nickname
                 refresh["login_type"] = user.login_type
+                refresh["is_admin"] = user.is_admin
                 user.last_login = timezone.now()
                 user.save()
                 refresh["last_login"] = str(user.last_login)
@@ -697,6 +703,7 @@ class NaverLoginView(APIView):
             refresh["email"] = user.email
             refresh["nickname"] = user.nickname
             refresh["login_type"] = user.login_type
+            refresh["is_admin"] = user.is_admin
             refresh["last_login"] = str(user.last_login)
             return Response(
                 {
@@ -794,6 +801,7 @@ class GithubLoginView(APIView):
                 refresh["email"] = user.email
                 refresh["nickname"] = user.nickname
                 refresh["login_type"] = user.login_type
+                refresh["is_admin"] = user.is_admin
                 user.last_login = timezone.now()
                 user.save()
                 refresh["last_login"] = str(user.last_login)
@@ -820,6 +828,7 @@ class GithubLoginView(APIView):
             refresh["email"] = user.email
             refresh["nickname"] = user.nickname
             refresh["login_type"] = user.login_type
+            refresh["is_admin"] = user.is_admin
             refresh["last_login"] = str(user.last_login)
             return Response(
                 {
