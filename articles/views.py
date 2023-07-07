@@ -43,6 +43,7 @@ import time
 import random
 from apscheduler.schedulers.background import BackgroundScheduler
 from rest_framework.throttling import UserRateThrottle
+from django.core.cache import cache
 
 REST_API_KEY = settings.REST_API
 NAVER_MAPS_API_GW_API_KEY_ID = settings.NAVER_MAPS_API_ID
@@ -249,6 +250,7 @@ class ArticleView(APIView, PaginationHandler):
         )
         if article_serializer.is_valid():
             article = article_serializer.save(user=request.user)
+            cache.delete('update_article')
             tags = request.data.get("tags", "").split("$%#&#^)!()")
             while True:
                 try:
@@ -722,45 +724,49 @@ class ArticleRandomView(generics.ListAPIView):
     def get_queryset(self):
         # 게시물 임의 선택
         if self.request.query_params.get("option") == "article":
-            return random_article
+            articles = cache.get('random_article')
+            if not articles:
+                try:
+                    articles = Article.objects.filter(db_status=1).order_by("?")[:5]
+                except:
+                    articles = Article.objects.filter(db_status=1)
+                cache.set('random_article', articles)
+            return articles
         # 임의의 태그 선택
         elif self.request.query_params.get("option") == "tag":
-            if WeeklyTags.objects.all().count() == 0:
-                get_weekly_tags()
-            weekly_tags = WeeklyTags.objects.all()
-            tag = weekly_tags[0]
-            articles = tag.tag.article_set.filter(db_status=1).order_by("-created_at")
-            if articles.count() == 0:
-                get_weekly_tags()
+            today_tag = cache.get('today_tag')
+            if not today_tag:
                 weekly_tags = WeeklyTags.objects.all()
+                if weekly_tags.count() == 0:
+                    get_weekly_tags()
                 tag = weekly_tags[0]
-                articles = tag.tag.article_set.filter(db_status=1).order_by(
-                    "-created_at"
-                )
-            return articles
+                today_tag = tag.tag.article_set.filter(db_status=1).order_by("-created_at")
+                if today_tag.count() == 0:
+                    get_weekly_tags()
+                    weekly_tags = WeeklyTags.objects.all()
+                    tag = weekly_tags[0]
+                    today_tag = tag.tag.article_set.filter(db_status=1).order_by(
+                        "-created_at"
+                    )
+                    cache.set('today_tag', today_tag)
+            return today_tag
         # 최신 게시물 5개
         if self.request.query_params.get("option") == "update":
-            articles = Article.objects.filter(db_status=1).order_by("-created_at")[0:5]
-            return articles
-        
+            update_article = cache.get('update_article')
+            if update_article is None:
+                update_article = Article.objects.filter(db_status=1).order_by("-created_at")[0:5]
+                cache.set('update_article', update_article)
+            return update_article
         return Response({"message": "다시 시도해주세요"},status=status.HTTP_404_NOT_FOUND,)
 
 
-def get_random_article():
-    global random_article
-    try:
-        queryset = Article.objects.filter(db_status=1).order_by("?")[:5]
-        random_article = queryset
-    except:
-        random_article = Article.objects.filter(db_status=1)
-
-
-get_random_article()
-
 scheduler = BackgroundScheduler()
 
-scheduler.add_job(get_random_article, "cron", hour=0, id="rand_1")
 
+def update_cache_task():
+    cache.clear()
+    
+scheduler.add_job(update_cache_task, "cron", hour=0, id="update_cache")
 
 def get_weekly_tags():
     weekly_tags = WeeklyTags.objects.all()
