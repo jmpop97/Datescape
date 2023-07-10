@@ -66,7 +66,6 @@
 - `django-rest-framework`
 - `git`
 
-### 배포 환경..도 적을까요?
 
 
 # 📌 Features
