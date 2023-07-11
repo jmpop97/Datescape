@@ -343,6 +343,7 @@ class UserEmoticonListView(APIView):
 
         # 포트원 결제 조회
         imp_uid = request.data["imp_uid"]
+        merchant_uid = request.data["merchant_uid"]
         headers = {"Authorization": TokenVal}
         response = requests.get(
             f"https://api.iamport.kr/payments/{imp_uid}", headers=headers
@@ -351,7 +352,10 @@ class UserEmoticonListView(APIView):
             payment_response = response.json()
             if payment_response["response"]["status"] == "paid":
                 UserEmoticonList.objects.create(
-                    sold_emoticon=emoticon, buyer=request.user
+                    sold_emoticon=emoticon,
+                    buyer=request.user,
+                    merchant_uid=merchant_uid,
+                    imp_uid=imp_uid,
                 )
                 return Response({"message": "결제 완료!"}, status=status.HTTP_200_OK)
             else:
@@ -360,6 +364,14 @@ class UserEmoticonListView(APIView):
                     status=status.HTTP_402_PAYMENT_REQUIRED,
                 )
         elif response.status_code == 401:
+            UserEmoticonList.objects.create(
+                sold_emoticon=emoticon,
+                buyer=request.user,
+                merchant_uid=merchant_uid,
+                imp_uid=imp_uid,
+                db_status=2,
+                db_status_reason="포트원 401에러",
+            )
             return Response(
                 {"message": "포트원 request 토큰 오류"},
                 status=status.HTTP_402_PAYMENT_REQUIRED,
@@ -369,6 +381,14 @@ class UserEmoticonListView(APIView):
                 {"message": "유효하지 않은 imp_uid"}, status=status.HTTP_402_PAYMENT_REQUIRED
             )
         else:
+            UserEmoticonList.objects.create(
+                sold_emoticon=emoticon,
+                buyer=request.user,
+                merchant_uid=merchant_uid,
+                imp_uid=imp_uid,
+                db_status=2,
+                db_status_reason="포트원 확인 되지 않는 오류",
+            )
             return Response(
                 {"message": "확인 되지 않는 오류, 포트원 문의 필요"},
                 status=status.HTTP_402_PAYMENT_REQUIRED,
