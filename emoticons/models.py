@@ -119,6 +119,9 @@ class UserEmoticonList(CommonModel):
     sold_emoticon = models.ForeignKey(
         Emoticon, on_delete=models.SET_NULL, related_name="sold_emoticon", null=True
     )
+    merchant_uid = models.CharField("결제 고유 번호", max_length=250, null=True)
+    imp_uid = models.CharField("포트원 결제 고유 번호", null=True, max_length=250)
+    db_status_reason = models.CharField("삭제상태 이유", null=True, max_length=250)
 
     def __str__(self):
         return f"이모티콘: {self.sold_emoticon} - 사용자: {self.buyer}"
