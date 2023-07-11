@@ -250,7 +250,7 @@ class ArticleView(APIView, PaginationHandler):
         )
         if article_serializer.is_valid():
             article = article_serializer.save(user=request.user)
-            cache.delete('update_article')
+            cache.delete("update_article")
             tags = request.data.get("tags", "").split("$%#&#^)!()")
             while True:
                 try:
@@ -504,11 +504,15 @@ class ArticleSearchView(generics.ListAPIView):
                         queryset_list.append(b)
         # 글작성자 검색
         if option == "user" or option == "all":
-            users = User.objects.filter(user_status='active', nickname__icontains=search)
+            users = User.objects.filter(
+                user_status="active", nickname__icontains=search
+            )
             for u in users:
-                article_list = u.article_user.filter(db_status=1).order_by("-created_at")
+                article_list = u.article_user.filter(db_status=1).order_by(
+                    "-created_at"
+                )
                 for b in article_list:
-                        queryset_list.append(b)
+                    queryset_list.append(b)
         # 중복 검색 값 제거
         result = []
         for i in queryset_list:
@@ -702,9 +706,9 @@ class UserCommentView(APIView):
 
     def get(self, request):
         """작성한 댓글 가져오기"""
-        comments = Comment.objects.filter(writer=request.user, db_status=1, article__db_status=1).order_by(
-            "-created_at"
-        )
+        comments = Comment.objects.filter(
+            writer=request.user, db_status=1, article__db_status=1
+        ).order_by("-created_at")
         serializer = CommentSerializer(comments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -724,23 +728,25 @@ class ArticleRandomView(generics.ListAPIView):
     def get_queryset(self):
         # 게시물 임의 선택
         if self.request.query_params.get("option") == "article":
-            articles = cache.get('random_article')
+            articles = cache.get("random_article")
             if not articles:
                 try:
                     articles = Article.objects.filter(db_status=1).order_by("?")[:5]
                 except:
                     articles = Article.objects.filter(db_status=1)
-                cache.set('random_article', articles)
+                cache.set("random_article", articles)
             return articles
         # 임의의 태그 선택
         elif self.request.query_params.get("option") == "tag":
-            today_tag = cache.get('today_tag')
+            today_tag = cache.get("today_tag")
             if not today_tag:
                 weekly_tags = WeeklyTags.objects.all()
                 if weekly_tags.count() == 0:
                     get_weekly_tags()
                 tag = weekly_tags[0]
-                today_tag = tag.tag.article_set.filter(db_status=1).order_by("-created_at")
+                today_tag = tag.tag.article_set.filter(db_status=1).order_by(
+                    "-created_at"
+                )
                 if today_tag.count() == 0:
                     get_weekly_tags()
                     weekly_tags = WeeklyTags.objects.all()
@@ -748,16 +754,21 @@ class ArticleRandomView(generics.ListAPIView):
                     today_tag = tag.tag.article_set.filter(db_status=1).order_by(
                         "-created_at"
                     )
-                    cache.set('today_tag', today_tag)
+                    cache.set("today_tag", today_tag)
             return today_tag
         # 최신 게시물 5개
         if self.request.query_params.get("option") == "update":
-            update_article = cache.get('update_article')
+            update_article = cache.get("update_article")
             if update_article is None:
-                update_article = Article.objects.filter(db_status=1).order_by("-created_at")[0:5]
-                cache.set('update_article', update_article)
+                update_article = Article.objects.filter(db_status=1).order_by(
+                    "-created_at"
+                )[0:5]
+                cache.set("update_article", update_article)
             return update_article
-        return Response({"message": "다시 시도해주세요"},status=status.HTTP_404_NOT_FOUND,)
+        return Response(
+            {"message": "다시 시도해주세요"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
 
 
 scheduler = BackgroundScheduler()
@@ -765,8 +776,10 @@ scheduler = BackgroundScheduler()
 
 def update_cache_task():
     cache.clear()
-    
+
+
 scheduler.add_job(update_cache_task, "cron", hour=0, id="update_cache")
+
 
 def get_weekly_tags():
     weekly_tags = WeeklyTags.objects.all()
@@ -914,7 +927,7 @@ class ArticleListView(APIView, PaginationHandler):
         user_id = request.GET.get("user_id", request.user.id)
         queryset = Article.objects.filter(db_status=1, user_id=user_id)
         return queryset
-    
+
     def location_filter(self, request):
         location = request.GET.get("location", None)
         queryset_list = []
@@ -929,9 +942,7 @@ class ArticleListView(APIView, PaginationHandler):
                 .order_by("-created_at")
             )
         for a in queryset:
-            article_list = a.article_set.filter(db_status=1).order_by(
-                "-created_at"
-            )
+            article_list = a.article_set.filter(db_status=1).order_by("-created_at")
             for b in article_list:
                 queryset_list.append(b)
         return queryset_list
